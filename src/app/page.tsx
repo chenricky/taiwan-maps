@@ -1,0 +1,398 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { AppData, Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
+import SearchBar from "@/components/SearchBar";
+import RoutingPanel from "@/components/RoutingPanel";
+import BookmarksSidebar from "@/components/BookmarksSidebar";
+import BookmarkModal from "@/components/BookmarkModal";
+import StickyNoteModal from "@/components/StickyNoteModal";
+import TodoPanel from "@/components/TodoPanel";
+
+const MapComponent = dynamic(() => import("@/components/MapComponent"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full flex items-center justify-center bg-gray-100">
+      <div className="text-gray-500">Loading map...</div>
+    </div>
+  ),
+});
+
+export default function Home() {
+  const [appData, setAppData] = useState<AppData>({
+    bookmarks: [],
+    stickyNotes: [],
+    todos: [],
+    updatedAt: new Date().toISOString(),
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [showNotes, setShowNotes] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+
+  // Click target for modals
+  const [clickTarget, setClickTarget] = useState<{ lat: number; lng: number } | null>(null);
+  const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+
+  // Routing state
+  const [routeStart, setRouteStart] = useState<RoutePoint | null>(null);
+  const [routeEnd, setRouteEnd] = useState<RoutePoint | null>(null);
+  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
+  const [routeDistance, setRouteDistance] = useState<string | undefined>();
+  const [routeDuration, setRouteDuration] = useState<string | undefined>();
+
+  // Search result
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+
+  // Load data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await fetch("/api/storage");
+        const data: AppData = await res.json();
+        setAppData(data);
+      } catch (error) {
+        console.error("Failed to load data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Save data
+  const saveData = useCallback(
+    async (newData: AppData) => {
+      setAppData(newData);
+      try {
+        await fetch("/api/storage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newData),
+        });
+      } catch (error) {
+        console.error("Failed to save data:", error);
+      }
+    },
+    []
+  );
+
+  // Map click handler
+  const handleMapClick = useCallback((lat: number, lng: number) => {
+    setClickTarget({ lat, lng });
+    setShowBookmarkModal(true);
+  }, []);
+
+  // Bookmark handlers
+  const handleSaveBookmark = useCallback(
+    (label: string) => {
+      if (!clickTarget) return;
+      const newBookmark: Bookmark = {
+        id: `bm-${Date.now()}`,
+        lat: clickTarget.lat,
+        lng: clickTarget.lng,
+        label,
+        createdAt: new Date().toISOString(),
+      };
+      const newData = {
+        ...appData,
+        bookmarks: [...appData.bookmarks, newBookmark],
+      };
+      saveData(newData);
+      setShowBookmarkModal(false);
+      setClickTarget(null);
+    },
+    [clickTarget, appData, saveData]
+  );
+
+  const handleDeleteBookmark = useCallback(
+    (id: string) => {
+      const newData = {
+        ...appData,
+        bookmarks: appData.bookmarks.filter((b) => b.id !== id),
+      };
+      saveData(newData);
+    },
+    [appData, saveData]
+  );
+
+  // Sticky note handlers
+  const handleOpenNoteModal = useCallback(() => {
+    setShowBookmarkModal(false);
+    setShowNoteModal(true);
+  }, []);
+
+  const handleSaveNote = useCallback(
+    (content: string, color: string) => {
+      if (!clickTarget) return;
+      const newNote: StickyNote = {
+        id: `note-${Date.now()}`,
+        lat: clickTarget.lat,
+        lng: clickTarget.lng,
+        content,
+        color,
+        createdAt: new Date().toISOString(),
+      };
+      const newData = {
+        ...appData,
+        stickyNotes: [...appData.stickyNotes, newNote],
+      };
+      saveData(newData);
+      setShowNoteModal(false);
+      setClickTarget(null);
+    },
+    [clickTarget, appData, saveData]
+  );
+
+  // Routing handler
+  const handleRoute = useCallback(
+    async (start: RoutePoint, end: RoutePoint, mode: TravelMode) => {
+      setRouteStart(start);
+      setRouteEnd(end);
+      setRouteCoords(null);
+
+      const modeMap: Record<string, string> = {
+        driving: "driving",
+        walking: "foot",
+        cycling: "cycling",
+      };
+
+      try {
+        const url = `https://router.project-osrm.org/route/v1/${modeMap[mode]}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.code === "Ok" && data.routes.length > 0) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map(
+            (c: [number, number]) => [c[1], c[0]] as [number, number]
+          );
+          setRouteCoords(coords);
+          setRouteDistance(`${(route.distance / 1000).toFixed(1)} km`);
+          setRouteDuration(`${Math.round(route.duration / 60)} min`);
+        }
+      } catch (error) {
+        console.error("Routing error:", error);
+        alert("Could not calculate route. Please try again.");
+      }
+    },
+    []
+  );
+
+  // Todo handlers
+  const handleAddTodo = useCallback(
+    (text: string, reminderDate?: string | null, reminderBookmarkId?: string | null) => {
+      const newTodo: TodoItem = {
+        id: `todo-${Date.now()}`,
+        text,
+        completed: false,
+        reminderDate: reminderDate || null,
+        reminderBookmarkId: reminderBookmarkId || null,
+        createdAt: new Date().toISOString(),
+      };
+      const newData = {
+        ...appData,
+        todos: [...appData.todos, newTodo],
+      };
+      saveData(newData);
+    },
+    [appData, saveData]
+  );
+
+  const handleToggleTodo = useCallback(
+    (id: string) => {
+      const newData = {
+        ...appData,
+        todos: appData.todos.map((t) =>
+          t.id === id ? { ...t, completed: !t.completed } : t
+        ),
+      };
+      saveData(newData);
+    },
+    [appData, saveData]
+  );
+
+  const handleDeleteTodo = useCallback(
+    (id: string) => {
+      const newData = {
+        ...appData,
+        todos: appData.todos.filter((t) => t.id !== id),
+      };
+      saveData(newData);
+    },
+    [appData, saveData]
+  );
+
+  // Bookmark route shortcuts
+  const handleSetRouteStart = useCallback((bm: Bookmark) => {
+    setRouteStart({ lat: bm.lat, lng: bm.lng });
+  }, []);
+
+  const handleSetRouteEnd = useCallback((bm: Bookmark) => {
+    setRouteEnd({ lat: bm.lat, lng: bm.lng });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
+          <div className="text-gray-600 font-medium">Loading Taiwan Maps...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4 z-50 shrink-0">
+        <h1 className="text-lg font-bold text-blue-700 flex items-center gap-2">
+          <span>🗺️</span> Taiwan Maps
+        </h1>
+        <div className="flex-1 flex justify-center">
+          <SearchBar onSearchResult={setSearchResult} />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowNotes(!showNotes)}
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+              showNotes
+                ? "bg-yellow-100 text-yellow-800 border border-yellow-300"
+                : "bg-gray-100 text-gray-500 border border-gray-300"
+            }`}
+          >
+            📝 {showNotes ? "Hide" : "Show"} Notes
+          </button>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left sidebar */}
+        <div
+          className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shrink-0 overflow-hidden ${
+            sidebarCollapsed ? "w-0 border-r-0" : "w-72"
+          }`}
+        >
+          <div className="p-3 space-y-3 overflow-y-auto flex-1">
+            <RoutingPanel
+              onRoute={handleRoute}
+              routeCoords={routeCoords}
+              routeDistance={routeDistance}
+              routeDuration={routeDuration}
+            />
+            <BookmarksSidebar
+              bookmarks={appData.bookmarks}
+              onDeleteBookmark={handleDeleteBookmark}
+              onSetRouteStart={handleSetRouteStart}
+              onSetRouteEnd={handleSetRouteEnd}
+            />
+          </div>
+        </div>
+
+        {/* Sidebar toggle (left) */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="bg-white border-r border-gray-200 px-1 hover:bg-gray-50 flex items-center z-10 shrink-0"
+          title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+        >
+          <svg
+            className={`w-4 h-4 text-gray-500 transition-transform ${
+              sidebarCollapsed ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Map area */}
+        <div className="flex-1 relative">
+          <MapComponent
+            bookmarks={appData.bookmarks}
+            stickyNotes={appData.stickyNotes}
+            onMapClick={handleMapClick}
+            routeStart={routeStart}
+            routeEnd={routeEnd}
+            routeCoords={routeCoords}
+            showNotes={showNotes}
+            searchResult={searchResult}
+          />
+        </div>
+
+        {/* Right panel toggle */}
+        <button
+          onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+          className="bg-white border-l border-gray-200 px-1 hover:bg-gray-50 flex items-center z-10 shrink-0"
+          title={rightPanelCollapsed ? "Show todos" : "Hide todos"}
+        >
+          <svg
+            className={`w-4 h-4 text-gray-500 transition-transform ${
+              rightPanelCollapsed ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* Right todo panel */}
+        <div
+          className={`bg-white border-l border-gray-200 transition-all duration-300 flex flex-col shrink-0 overflow-hidden ${
+            rightPanelCollapsed ? "w-0 border-l-0" : "w-72"
+          }`}
+        >
+          <div className="p-3 overflow-y-auto flex-1">
+            <TodoPanel
+              todos={appData.todos}
+              bookmarks={appData.bookmarks}
+              onAddTodo={handleAddTodo}
+              onToggleTodo={handleToggleTodo}
+              onDeleteTodo={handleDeleteTodo}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showBookmarkModal && clickTarget && (
+        <BookmarkModal
+          lat={clickTarget.lat}
+          lng={clickTarget.lng}
+          onSave={handleSaveBookmark}
+          onAddNote={handleOpenNoteModal}
+          onClose={() => {
+            setShowBookmarkModal(false);
+            setClickTarget(null);
+          }}
+        />
+      )}
+
+      {showNoteModal && clickTarget && (
+        <StickyNoteModal
+          lat={clickTarget.lat}
+          lng={clickTarget.lng}
+          onSave={handleSaveNote}
+          onClose={() => {
+            setShowNoteModal(false);
+            setClickTarget(null);
+          }}
+        />
+      )}
+
+      {/* Status bar */}
+      <footer className="bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex items-center justify-between shrink-0">
+        <span>Bookmarks: {appData.bookmarks.length} | Notes: {appData.stickyNotes.length} | Todos: {appData.todos.length}</span>
+        <span>OpenStreetMap &copy; contributors</span>
+      </footer>
+    </div>
+  );
+}
