@@ -1,9 +1,9 @@
 import { AppData } from "@/types";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
-const REPO_OWNER = process.env.REPO_OWNER || "";
-const REPO_NAME = process.env.REPO_NAME || "";
-const FILE_PATH = "data/taiwan-maps-data.json";
+const REPO_OWNER = process.env.GITHUB_USERNAME || process.env.REPO_OWNER || "";
+const REPO_NAME = process.env.GITHUB_REPO || process.env.REPO_NAME || "";
+const FILE_PATH = "data/user_data.json";
 const BRANCH = "main";
 
 const GITHUB_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
@@ -88,7 +88,7 @@ export async function saveAppData(data: AppData): Promise<boolean> {
     }
 
     const body: Record<string, unknown> = {
-      message: "Update taiwan-maps data",
+      message: "Update taiwan-maps user data",
       content,
       branch: BRANCH,
     };

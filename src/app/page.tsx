@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { AppData, Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
 import SearchBar from "@/components/SearchBar";
@@ -29,6 +29,7 @@ export default function Home() {
 
   const [loading, setLoading] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
+  const [showMrtLayer, setShowMrtLayer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
@@ -46,6 +47,10 @@ export default function Home() {
 
   // Search result
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+
+  // Fly-to target with incrementing key so clicking same bookmark always re-fires
+  const flyToKeyRef = useRef(0);
+  const [flyToTarget, setFlyToTarget] = useState<{ bookmark: Bookmark; key: number } | null>(null);
 
   // Load data
   useEffect(() => {
@@ -235,6 +240,12 @@ export default function Home() {
     setRouteEnd({ lat: bm.lat, lng: bm.lng });
   }, []);
 
+  // Handle bookmark click to fly to location — works every time, even for the same bookmark
+  const handleSelectBookmark = useCallback((bm: Bookmark) => {
+    flyToKeyRef.current += 1;
+    setFlyToTarget({ bookmark: bm, key: flyToKeyRef.current });
+  }, []);
+
   if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
@@ -249,20 +260,34 @@ export default function Home() {
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4 z-50 shrink-0">
-        <h1 className="text-lg font-bold text-blue-700 flex items-center gap-2">
+      <header className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 z-50 shrink-0">
+        <h1 className="text-lg font-bold text-blue-700 flex items-center gap-2 shrink-0">
           <span>🗺️</span> Taiwan Maps
         </h1>
         <div className="flex-1 flex justify-center">
           <SearchBar onSearchResult={setSearchResult} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* MRT Elevator Toggle */}
+          <button
+            onClick={() => setShowMrtLayer(!showMrtLayer)}
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+              showMrtLayer
+                ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+            }`}
+            title="顯示/隱藏捷運無障礙電梯"
+          >
+            ♿ {showMrtLayer ? "隱藏" : "顯示"}捷運無障礙電梯
+          </button>
+
+          {/* Notes Toggle */}
           <button
             onClick={() => setShowNotes(!showNotes)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors border ${
               showNotes
-                ? "bg-yellow-100 text-yellow-800 border border-yellow-300"
-                : "bg-gray-100 text-gray-500 border border-gray-300"
+                ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                : "bg-gray-100 text-gray-500 border-gray-300"
             }`}
           >
             📝 {showNotes ? "Hide" : "Show"} Notes
@@ -288,6 +313,7 @@ export default function Home() {
             <BookmarksSidebar
               bookmarks={appData.bookmarks}
               onDeleteBookmark={handleDeleteBookmark}
+              onSelectBookmark={handleSelectBookmark}
               onSetRouteStart={handleSetRouteStart}
               onSetRouteEnd={handleSetRouteEnd}
             />
@@ -322,7 +348,9 @@ export default function Home() {
             routeEnd={routeEnd}
             routeCoords={routeCoords}
             showNotes={showNotes}
+            showMrtLayer={showMrtLayer}
             searchResult={searchResult}
+            flyToTarget={flyToTarget}
           />
         </div>
 
@@ -390,7 +418,10 @@ export default function Home() {
 
       {/* Status bar */}
       <footer className="bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex items-center justify-between shrink-0">
-        <span>Bookmarks: {appData.bookmarks.length} | Notes: {appData.stickyNotes.length} | Todos: {appData.todos.length}</span>
+        <span>
+          Bookmarks: {appData.bookmarks.length} | Notes: {appData.stickyNotes.length} | Todos: {appData.todos.length}
+          {showMrtLayer && " | ♿ MRT Elevator Layer ON"}
+        </span>
         <span>OpenStreetMap &copy; contributors</span>
       </footer>
     </div>

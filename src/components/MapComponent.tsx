@@ -19,6 +19,12 @@ import {
   TravelMode,
   SearchResult,
 } from "@/types";
+import MrtElevatorLayer from "@/components/MrtElevatorLayer";
+
+interface FlyToTarget {
+  bookmark: Bookmark;
+  key: number;
+}
 
 // Fix Leaflet default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -63,17 +69,21 @@ interface MapComponentProps {
   routeEnd: RoutePoint | null;
   routeCoords: [number, number][] | null;
   showNotes: boolean;
+  showMrtLayer: boolean;
   searchResult: SearchResult | null;
+  flyToTarget?: FlyToTarget | null;
 }
 
 function MapController({
   searchResult,
   routeStart,
   routeEnd,
+  flyToTarget,
 }: {
   searchResult: SearchResult | null;
   routeStart: RoutePoint | null;
   routeEnd: RoutePoint | null;
+  flyToTarget?: FlyToTarget | null;
 }) {
   const map = useMap();
 
@@ -92,6 +102,12 @@ function MapController({
       map.fitBounds(bounds, { padding: [50, 50] });
     }
   }, [routeStart, routeEnd, map]);
+
+  useEffect(() => {
+    if (flyToTarget) {
+      map.flyTo([flyToTarget.bookmark.lat, flyToTarget.bookmark.lng], 14);
+    }
+  }, [flyToTarget, map]);
 
   return null;
 }
@@ -117,7 +133,9 @@ export default function MapComponent({
   routeEnd,
   routeCoords,
   showNotes,
+  showMrtLayer,
   searchResult,
+  flyToTarget,
 }: MapComponentProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
@@ -145,8 +163,8 @@ export default function MapComponent({
   return (
     <div className="relative h-full w-full">
       <MapContainer
-        center={[23.5, 121]}
-        zoom={8}
+        center={[25.0478, 121.5170]}
+        zoom={12}
         className="h-full w-full z-0"
         ref={mapRef}
       >
@@ -159,9 +177,13 @@ export default function MapComponent({
           searchResult={searchResult}
           routeStart={routeStart}
           routeEnd={routeEnd}
+          flyToTarget={flyToTarget}
         />
 
         <ClickHandler onMapClick={onMapClick} />
+
+        {/* MRT Elevator Layer */}
+        {showMrtLayer && <MrtElevatorLayer />}
 
         {/* User location */}
         {userLocation && (
@@ -219,7 +241,7 @@ export default function MapComponent({
       </MapContainer>
 
       {/* Controls overlay */}
-      <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-2">
+      <div className="absolute bottom-8 right-4 z-[1000] flex flex-col gap-2">
         <button
           onClick={handleLocateMe}
           className="bg-white p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
