@@ -32,6 +32,7 @@ export default function Home() {
   const [showToiletLayer, setShowToiletLayer] = useState(false);
   const [showTrailLayer, setShowTrailLayer] = useState(false);
   const [showRouteLayer, setShowRouteLayer] = useState(false);
+  const [showFacilitiesLayer, setShowFacilitiesLayer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
@@ -270,6 +271,19 @@ export default function Home() {
           <SearchBar onSearchResult={setSearchResult} />
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* MRT Facilities Toggle */}
+          <button
+            onClick={() => setShowFacilitiesLayer(!showFacilitiesLayer)}
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+              showFacilitiesLayer
+                ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+            }`}
+            title="顯示/隱藏捷運出入口設施"
+          >
+            ♿ {showFacilitiesLayer ? "隱藏" : "顯示"}捷運出入口設施
+          </button>
+
           {/* MRT Route Lines Toggle */}
           <button
             onClick={() => setShowRouteLayer(!showRouteLayer)}
@@ -376,6 +390,7 @@ export default function Home() {
             routeEnd={routeEnd}
             routeCoords={routeCoords}
             showNotes={showNotes}
+            showFacilitiesLayer={showFacilitiesLayer}
             showToiletLayer={showToiletLayer}
             showTrailLayer={showTrailLayer}
             showRouteLayer={showRouteLayer}
@@ -450,6 +465,7 @@ export default function Home() {
       <footer className="bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex items-center justify-between shrink-0">
         <span>
           Bookmarks: {appData.bookmarks.length} | Notes: {appData.stickyNotes.length} | Todos: {appData.todos.length}
+          {showFacilitiesLayer && " | ♿ 出入口設施 ON"}
           {showRouteLayer && " | 🚇 路網線 ON"}
           {showToiletLayer && " | 🚻 友善廁所 ON"}
         </span>

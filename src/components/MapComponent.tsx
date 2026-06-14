@@ -21,6 +21,7 @@ import {
 import FriendlyToiletLayer from "@/components/FriendlyToiletLayer";
 import WalkingTrailLayer from "@/components/WalkingTrailLayer";
 import MrtRouteLayer from "@/components/MrtRouteLayer";
+import MrtFacilitiesLayer from "@/components/MrtFacilitiesLayer";
 
 interface FlyToTarget {
   bookmark: Bookmark;
@@ -73,6 +74,7 @@ interface MapComponentProps {
   showToiletLayer: boolean;
   showTrailLayer: boolean;
   showRouteLayer: boolean;
+  showFacilitiesLayer: boolean;
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
 }
@@ -139,6 +141,7 @@ export default function MapComponent({
   showToiletLayer,
   showTrailLayer,
   showRouteLayer,
+  showFacilitiesLayer,
   searchResult,
   flyToTarget,
 }: MapComponentProps) {
@@ -187,8 +190,11 @@ export default function MapComponent({
 
         <ClickHandler onMapClick={onMapClick} />
 
-        {/* MRT Route Lines Layer (rendered below elevator markers) */}
+        {/* MRT Route Lines Layer */}
         {showRouteLayer && <MrtRouteLayer />}
+
+        {/* MRT Station Facilities Layer (elevators & ramps) */}
+        {showFacilitiesLayer && <MrtFacilitiesLayer />}
 
         {/* Friendly Toilet Layer */}
         {showToiletLayer && <FriendlyToiletLayer />}
