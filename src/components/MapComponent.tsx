@@ -18,7 +18,6 @@ import {
   RoutePoint,
   SearchResult,
 } from "@/types";
-import MrtElevatorLayer from "@/components/MrtElevatorLayer";
 import FriendlyToiletLayer from "@/components/FriendlyToiletLayer";
 import WalkingTrailLayer from "@/components/WalkingTrailLayer";
 import MrtRouteLayer from "@/components/MrtRouteLayer";
@@ -71,7 +70,6 @@ interface MapComponentProps {
   routeEnd: RoutePoint | null;
   routeCoords: [number, number][] | null;
   showNotes: boolean;
-  showMrtLayer: boolean;
   showToiletLayer: boolean;
   showTrailLayer: boolean;
   showRouteLayer: boolean;
@@ -138,7 +136,6 @@ export default function MapComponent({
   routeEnd,
   routeCoords,
   showNotes,
-  showMrtLayer,
   showToiletLayer,
   showTrailLayer,
   showRouteLayer,
@@ -192,9 +189,6 @@ export default function MapComponent({
 
         {/* MRT Route Lines Layer (rendered below elevator markers) */}
         {showRouteLayer && <MrtRouteLayer />}
-
-        {/* MRT Elevator Layer */}
-        {showMrtLayer && <MrtElevatorLayer />}
 
         {/* Friendly Toilet Layer */}
         {showToiletLayer && <FriendlyToiletLayer />}
