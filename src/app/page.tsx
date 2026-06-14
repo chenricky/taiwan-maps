@@ -34,6 +34,7 @@ export default function Home() {
   const [showRouteLayer, setShowRouteLayer] = useState(false);
   const [showFacilitiesLayer, setShowFacilitiesLayer] = useState(false);
   const [showBusLayer, setShowBusLayer] = useState(false);
+  const [showTouristLayer, setShowTouristLayer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
@@ -264,18 +265,35 @@ export default function Home() {
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 z-50 shrink-0">
-        <h1 className="text-lg font-bold text-blue-700 flex items-center gap-2 shrink-0">
-          <span>🗺️</span> Taiwan Maps
-        </h1>
-        <div className="flex-1 flex justify-center">
-          <SearchBar onSearchResult={setSearchResult} />
+      <header className="bg-white border-b border-gray-200 px-4 py-2 flex flex-col gap-1.5 z-50 shrink-0">
+        {/* Top row: logo + search */}
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold text-blue-700 flex items-center gap-2 shrink-0">
+            <span>🗺️</span> Taiwan Maps
+          </h1>
+          <div className="flex-1 flex justify-center">
+            <SearchBar onSearchResult={setSearchResult} />
+          </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Bottom row: layer toggles — wraps on narrow screens */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Tourist Spots Toggle — FIRST */}
+          <button
+            onClick={() => setShowTouristLayer(!showTouristLayer)}
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
+              showTouristLayer
+                ? "bg-amber-500 text-white border-amber-600 shadow-sm"
+                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+            }`}
+            title="顯示/隱藏精選觀光景點"
+          >
+            ✨ {showTouristLayer ? "隱藏" : "顯示"}精選觀光景點
+          </button>
+
           {/* MRT Facilities Toggle */}
           <button
             onClick={() => setShowFacilitiesLayer(!showFacilitiesLayer)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
               showFacilitiesLayer
                 ? "bg-blue-600 text-white border-blue-700 shadow-sm"
                 : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
@@ -288,7 +306,7 @@ export default function Home() {
           {/* MRT Route Lines Toggle */}
           <button
             onClick={() => setShowRouteLayer(!showRouteLayer)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
               showRouteLayer
                 ? "bg-indigo-600 text-white border-indigo-700 shadow-sm"
                 : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
@@ -301,7 +319,7 @@ export default function Home() {
           {/* Friendly Toilet Toggle */}
           <button
             onClick={() => setShowToiletLayer(!showToiletLayer)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
               showToiletLayer
                 ? "bg-green-600 text-white border-green-700 shadow-sm"
                 : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
@@ -314,7 +332,7 @@ export default function Home() {
           {/* Walking Trail Toggle */}
           <button
             onClick={() => setShowTrailLayer(!showTrailLayer)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
               showTrailLayer
                 ? "bg-emerald-600 text-white border-emerald-700 shadow-sm"
                 : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
@@ -327,7 +345,7 @@ export default function Home() {
           {/* Bus Transfer Toggle */}
           <button
             onClick={() => setShowBusLayer(!showBusLayer)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
               showBusLayer
                 ? "bg-orange-500 text-white border-orange-600 shadow-sm"
                 : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
@@ -340,7 +358,7 @@ export default function Home() {
           {/* Notes Toggle */}
           <button
             onClick={() => setShowNotes(!showNotes)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors border ${
+            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors border whitespace-nowrap ${
               showNotes
                 ? "bg-yellow-100 text-yellow-800 border-yellow-300"
                 : "bg-gray-100 text-gray-500 border-gray-300"
@@ -409,6 +427,7 @@ export default function Home() {
             showTrailLayer={showTrailLayer}
             showRouteLayer={showRouteLayer}
             showBusLayer={showBusLayer}
+            showTouristLayer={showTouristLayer}
             searchResult={searchResult}
             flyToTarget={flyToTarget}
           />
