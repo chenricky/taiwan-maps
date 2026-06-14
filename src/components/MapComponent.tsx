@@ -20,6 +20,7 @@ import {
   SearchResult,
 } from "@/types";
 import MrtElevatorLayer from "@/components/MrtElevatorLayer";
+import FriendlyToiletLayer from "@/components/FriendlyToiletLayer";
 
 interface FlyToTarget {
   bookmark: Bookmark;
@@ -70,6 +71,7 @@ interface MapComponentProps {
   routeCoords: [number, number][] | null;
   showNotes: boolean;
   showMrtLayer: boolean;
+  showToiletLayer: boolean;
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
 }
@@ -134,6 +136,7 @@ export default function MapComponent({
   routeCoords,
   showNotes,
   showMrtLayer,
+  showToiletLayer,
   searchResult,
   flyToTarget,
 }: MapComponentProps) {
@@ -184,6 +187,9 @@ export default function MapComponent({
 
         {/* MRT Elevator Layer */}
         {showMrtLayer && <MrtElevatorLayer />}
+
+        {/* Friendly Toilet Layer */}
+        {showToiletLayer && <FriendlyToiletLayer />}
 
         {/* User location */}
         {userLocation && (

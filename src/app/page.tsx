@@ -30,6 +30,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
   const [showMrtLayer, setShowMrtLayer] = useState(false);
+  const [showToiletLayer, setShowToiletLayer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
@@ -281,6 +282,19 @@ export default function Home() {
             ♿ {showMrtLayer ? "隱藏" : "顯示"}捷運無障礙電梯
           </button>
 
+          {/* Friendly Toilet Toggle */}
+          <button
+            onClick={() => setShowToiletLayer(!showToiletLayer)}
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+              showToiletLayer
+                ? "bg-green-600 text-white border-green-700 shadow-sm"
+                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+            }`}
+            title="顯示/隱藏夜市友善廁所"
+          >
+            🚻 {showToiletLayer ? "隱藏" : "顯示"}夜市友善廁所
+          </button>
+
           {/* Notes Toggle */}
           <button
             onClick={() => setShowNotes(!showNotes)}
@@ -349,6 +363,7 @@ export default function Home() {
             routeCoords={routeCoords}
             showNotes={showNotes}
             showMrtLayer={showMrtLayer}
+            showToiletLayer={showToiletLayer}
             searchResult={searchResult}
             flyToTarget={flyToTarget}
           />
@@ -420,7 +435,8 @@ export default function Home() {
       <footer className="bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex items-center justify-between shrink-0">
         <span>
           Bookmarks: {appData.bookmarks.length} | Notes: {appData.stickyNotes.length} | Todos: {appData.todos.length}
-          {showMrtLayer && " | ♿ MRT Elevator Layer ON"}
+          {showMrtLayer && " | ♿ 捷運電梯 ON"}
+          {showToiletLayer && " | 🚻 友善廁所 ON"}
         </span>
         <span>OpenStreetMap &copy; contributors</span>
       </footer>
