@@ -32,6 +32,7 @@ export default function Home() {
   const [showMrtLayer, setShowMrtLayer] = useState(false);
   const [showToiletLayer, setShowToiletLayer] = useState(false);
   const [showTrailLayer, setShowTrailLayer] = useState(false);
+  const [showRouteLayer, setShowRouteLayer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
@@ -270,6 +271,19 @@ export default function Home() {
           <SearchBar onSearchResult={setSearchResult} />
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* MRT Route Lines Toggle */}
+          <button
+            onClick={() => setShowRouteLayer(!showRouteLayer)}
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+              showRouteLayer
+                ? "bg-indigo-600 text-white border-indigo-700 shadow-sm"
+                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+            }`}
+            title="顯示/隱藏捷運路網線"
+          >
+            🚇 {showRouteLayer ? "隱藏" : "顯示"}捷運路網線
+          </button>
+
           {/* MRT Elevator Toggle */}
           <button
             onClick={() => setShowMrtLayer(!showMrtLayer)}
@@ -379,6 +393,7 @@ export default function Home() {
             showMrtLayer={showMrtLayer}
             showToiletLayer={showToiletLayer}
             showTrailLayer={showTrailLayer}
+            showRouteLayer={showRouteLayer}
             searchResult={searchResult}
             flyToTarget={flyToTarget}
           />
@@ -450,6 +465,7 @@ export default function Home() {
       <footer className="bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex items-center justify-between shrink-0">
         <span>
           Bookmarks: {appData.bookmarks.length} | Notes: {appData.stickyNotes.length} | Todos: {appData.todos.length}
+          {showRouteLayer && " | 🚇 路網線 ON"}
           {showMrtLayer && " | ♿ 捷運電梯 ON"}
           {showToiletLayer && " | 🚻 友善廁所 ON"}
         </span>
