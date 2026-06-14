@@ -16,11 +16,11 @@ import {
   Bookmark,
   StickyNote,
   RoutePoint,
-  TravelMode,
   SearchResult,
 } from "@/types";
 import MrtElevatorLayer from "@/components/MrtElevatorLayer";
 import FriendlyToiletLayer from "@/components/FriendlyToiletLayer";
+import WalkingTrailLayer from "@/components/WalkingTrailLayer";
 
 interface FlyToTarget {
   bookmark: Bookmark;
@@ -72,6 +72,7 @@ interface MapComponentProps {
   showNotes: boolean;
   showMrtLayer: boolean;
   showToiletLayer: boolean;
+  showTrailLayer: boolean;
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
 }
@@ -137,6 +138,7 @@ export default function MapComponent({
   showNotes,
   showMrtLayer,
   showToiletLayer,
+  showTrailLayer,
   searchResult,
   flyToTarget,
 }: MapComponentProps) {
@@ -190,6 +192,9 @@ export default function MapComponent({
 
         {/* Friendly Toilet Layer */}
         {showToiletLayer && <FriendlyToiletLayer />}
+
+        {/* Walking Trail Layer */}
+        {showTrailLayer && <WalkingTrailLayer />}
 
         {/* User location */}
         {userLocation && (

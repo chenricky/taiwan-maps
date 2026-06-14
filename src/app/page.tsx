@@ -31,6 +31,7 @@ export default function Home() {
   const [showNotes, setShowNotes] = useState(true);
   const [showMrtLayer, setShowMrtLayer] = useState(false);
   const [showToiletLayer, setShowToiletLayer] = useState(false);
+  const [showTrailLayer, setShowTrailLayer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
@@ -295,6 +296,19 @@ export default function Home() {
             🚻 {showToiletLayer ? "隱藏" : "顯示"}夜市友善廁所
           </button>
 
+          {/* Walking Trail Toggle */}
+          <button
+            onClick={() => setShowTrailLayer(!showTrailLayer)}
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+              showTrailLayer
+                ? "bg-emerald-600 text-white border-emerald-700 shadow-sm"
+                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+            }`}
+            title="顯示/隱藏健走步道"
+          >
+            🥾 {showTrailLayer ? "隱藏" : "顯示"}健走步道
+          </button>
+
           {/* Notes Toggle */}
           <button
             onClick={() => setShowNotes(!showNotes)}
@@ -364,6 +378,7 @@ export default function Home() {
             showNotes={showNotes}
             showMrtLayer={showMrtLayer}
             showToiletLayer={showToiletLayer}
+            showTrailLayer={showTrailLayer}
             searchResult={searchResult}
             flyToTarget={flyToTarget}
           />
