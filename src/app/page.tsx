@@ -33,6 +33,7 @@ export default function Home() {
   const [showTrailLayer, setShowTrailLayer] = useState(false);
   const [showRouteLayer, setShowRouteLayer] = useState(false);
   const [showFacilitiesLayer, setShowFacilitiesLayer] = useState(false);
+  const [showBusLayer, setShowBusLayer] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
@@ -323,6 +324,19 @@ export default function Home() {
             🥾 {showTrailLayer ? "隱藏" : "顯示"}健走步道
           </button>
 
+          {/* Bus Transfer Toggle */}
+          <button
+            onClick={() => setShowBusLayer(!showBusLayer)}
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all border ${
+              showBusLayer
+                ? "bg-orange-500 text-white border-orange-600 shadow-sm"
+                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+            }`}
+            title="顯示/隱藏出口公車轉乘"
+          >
+            🚌 {showBusLayer ? "隱藏" : "顯示"}出口公車轉乘
+          </button>
+
           {/* Notes Toggle */}
           <button
             onClick={() => setShowNotes(!showNotes)}
@@ -394,6 +408,7 @@ export default function Home() {
             showToiletLayer={showToiletLayer}
             showTrailLayer={showTrailLayer}
             showRouteLayer={showRouteLayer}
+            showBusLayer={showBusLayer}
             searchResult={searchResult}
             flyToTarget={flyToTarget}
           />

@@ -22,6 +22,7 @@ import FriendlyToiletLayer from "@/components/FriendlyToiletLayer";
 import WalkingTrailLayer from "@/components/WalkingTrailLayer";
 import MrtRouteLayer from "@/components/MrtRouteLayer";
 import MrtFacilitiesLayer from "@/components/MrtFacilitiesLayer";
+import BusTransferLayer from "@/components/BusTransferLayer";
 
 interface FlyToTarget {
   bookmark: Bookmark;
@@ -75,6 +76,7 @@ interface MapComponentProps {
   showTrailLayer: boolean;
   showRouteLayer: boolean;
   showFacilitiesLayer: boolean;
+  showBusLayer: boolean;
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
 }
@@ -142,6 +144,7 @@ export default function MapComponent({
   showTrailLayer,
   showRouteLayer,
   showFacilitiesLayer,
+  showBusLayer,
   searchResult,
   flyToTarget,
 }: MapComponentProps) {
@@ -201,6 +204,9 @@ export default function MapComponent({
 
         {/* Walking Trail Layer */}
         {showTrailLayer && <WalkingTrailLayer />}
+
+        {/* Bus Transfer Layer */}
+        {showBusLayer && <BusTransferLayer visible={showBusLayer} />}
 
         {/* User location */}
         {userLocation && (
