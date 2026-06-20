@@ -1,27 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface InviteManagerModalProps {
+  /** Initial list passed from parent — modal will immediately re-fetch a fresh copy on open */
   invitedUsers: string[];
   onClose: () => void;
-  /** Called after a successful add/remove so the parent can re-fetch appData */
+  /** Called after a successful add/remove so the parent can sync its own appData state */
   onRefresh: () => void;
 }
 
 const ADMIN_EMAIL = "chenricky@gmail.com";
 
 export default function InviteManagerModal({
-  invitedUsers,
+  invitedUsers: initialUsers,
   onClose,
   onRefresh,
 }: InviteManagerModalProps) {
-  const [newEmail, setNewEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  // ── Local state — owns the live list shown in the modal ──────────────────
+  const [localUsers, setLocalUsers] = useState<string[]>(initialUsers);
+  const [newEmail, setNewEmail]     = useState("");
+  const [busy, setBusy]             = useState(false);
+  const [fetching, setFetching]     = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+  const [success, setSuccess]       = useState<string | null>(null);
 
   const clearMessages = () => { setError(null); setSuccess(null); };
+
+  // ── Bug B fix: fetch fresh whitelist the moment the modal opens ──────────
+  useEffect(() => {
+    let cancelled = false;
+    const fetchFresh = async () => {
+      setFetching(true);
+      try {
+        const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json() as Record<string, unknown>;
+        if (!cancelled && Array.isArray(data.invitedUsers)) {
+          setLocalUsers(data.invitedUsers as string[]);
+        }
+      } catch {
+        // Silent — fall back to the prop value already in state
+      } finally {
+        if (!cancelled) setFetching(false);
+      }
+    };
+    fetchFresh();
+    return () => { cancelled = true; };
+  }, []); // runs once on mount (modal is only mounted when open)
 
   // ── Add ──────────────────────────────────────────────────────────────────
   const handleAdd = async () => {
@@ -38,13 +64,17 @@ export default function InviteManagerModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
+      const data = await res.json() as Record<string, unknown>;
       if (!res.ok || !data.success) {
-        setError(data.error ?? "新增失敗，請稍後再試");
+        setError((data.error as string) ?? "新增失敗，請稍後再試");
       } else {
+        // ── Immediate local mutation — no reload needed ──────────────────
+        setLocalUsers((prev) =>
+          prev.map((e) => e.toLowerCase()).includes(email) ? prev : [...prev, email]
+        );
         setSuccess(`✅ 已成功邀請 ${email}`);
         setNewEmail("");
-        onRefresh();
+        onRefresh(); // also sync parent state in background
       }
     } catch (err) {
       setError(`網路錯誤：${String(err)}`);
@@ -64,12 +94,14 @@ export default function InviteManagerModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
+      const data = await res.json() as Record<string, unknown>;
       if (!res.ok || !data.success) {
-        setError(data.error ?? "移除失敗，請稍後再試");
+        setError((data.error as string) ?? "移除失敗，請稍後再試");
       } else {
+        // ── Immediate local mutation — no reload needed ──────────────────
+        setLocalUsers((prev) => prev.filter((e) => e.toLowerCase() !== email.toLowerCase()));
         setSuccess(`🗑️ 已移除 ${email}`);
-        onRefresh();
+        onRefresh(); // also sync parent state in background
       }
     } catch (err) {
       setError(`網路錯誤：${String(err)}`);
@@ -91,6 +123,9 @@ export default function InviteManagerModal({
           <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
             <span>⚙️</span>
             <span>成員管理</span>
+            {fetching && (
+              <span className="text-xs text-gray-400 font-normal animate-pulse">載入中…</span>
+            )}
           </h2>
           <button
             onClick={onClose}
@@ -144,13 +179,13 @@ export default function InviteManagerModal({
           {/* Current whitelist */}
           <div>
             <p className="text-xs font-semibold text-gray-600 mb-2">
-              目前白名單成員（{invitedUsers.length} 人）
+              目前白名單成員（{localUsers.length} 人）
             </p>
             <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-              {invitedUsers.length === 0 ? (
+              {localUsers.length === 0 ? (
                 <p className="text-xs text-gray-400 italic">尚無成員</p>
               ) : (
-                invitedUsers.map((email) => {
+                localUsers.map((email) => {
                   const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
                   return (
                     <div

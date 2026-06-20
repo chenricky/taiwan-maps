@@ -59,7 +59,7 @@ export const authOptions: NextAuthOptions = {
 
       // 2. Fetch fresh data from GitHub to check the whitelist
       try {
-        const data = await fetchFreshAppData(null); // reads the shared user_data.json
+        const data = await fetchFreshAppData(null); // always reads the shared data/user_data.json
         const whitelist = (data.invitedUsers ?? []).map((e: string) => e.toLowerCase());
         if (whitelist.includes(loginEmail)) return true;
       } catch (err) {

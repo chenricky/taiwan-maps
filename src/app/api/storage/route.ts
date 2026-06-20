@@ -20,10 +20,12 @@ export async function GET() {
     const email = session?.user?.email ?? null;
     console.log(`[GET /api/storage] session=${email ?? "guest"}`);
 
-    // ── 2. Fetch data with its own guard ───────────────────────────────────
+    // ── 2. Fetch SHARED global data (null = data/user_data.json) ──────────
+    // All authenticated users share the same global map data.
+    // Per-user routing was the root cause of invited users seeing empty maps.
     let data: AppData;
     try {
-      data = await fetchAppData(email);
+      data = await fetchAppData(null);
     } catch (fetchErr) {
       console.error("[API CRASH LOG]: fetchAppData threw in GET /api/storage:", fetchErr);
       const def = getDefaultAppData();
@@ -137,8 +139,8 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString(),
     };
 
-    // ── 4. Persist to GitHub ───────────────────────────────────────────────
-    const success = await saveAppData(data, userEmail);
+    // ── 4. Persist to shared global file (null = data/user_data.json) ─────
+    const success = await saveAppData(data, null);
 
     if (success) {
       return NextResponse.json({ success: true, data });
