@@ -1,5 +1,17 @@
 {
-  "bookmarks": [],
+  "bookmarks": [
+    {
+      "id": "bm-1781986874546",
+      "lat": 25.008358047488983,
+      "lng": 121.52853678786097,
+      "label": "32ec23",
+      "createdAt": "2026-06-20T20:21:14.546Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
+    }
+  ],
   "notes": [
     {
       "id": "note-1781986865069",
