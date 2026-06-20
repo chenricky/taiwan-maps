@@ -1,28 +1,5 @@
 {
-  "bookmarks": [
-    {
-      "id": "bm-1781985250654",
-      "lat": 25.02322968896724,
-      "lng": 121.51067525631026,
-      "label": "csfSEFD",
-      "createdAt": "2026-06-20T19:54:10.654Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
-    },
-    {
-      "id": "bm-1781985287221",
-      "lat": 24.99583884924347,
-      "lng": 121.42893705957144,
-      "label": "DGSR",
-      "createdAt": "2026-06-20T19:54:47.221Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
-    }
-  ],
+  "bookmarks": [],
   "notes": [],
   "todos": []
 }
