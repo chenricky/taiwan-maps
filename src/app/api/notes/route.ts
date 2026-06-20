@@ -43,8 +43,8 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // ── Fetch-before-write: always get the freshest snapshot ──────────────
-    const fresh = await fetchFreshAppData(email);
+    // ── Fetch-before-write: always get the freshest snapshot from shared file
+    const fresh = await fetchFreshAppData(null);
 
     const noteIndex = fresh.stickyNotes.findIndex((n: StickyNote) => n.id === noteId);
     if (noteIndex === -1) {
@@ -70,7 +70,7 @@ export async function PATCH(request: Request) {
     updatedNotes[noteIndex] = updatedNote;
 
     const newData = { ...fresh, stickyNotes: updatedNotes, updatedAt: new Date().toISOString() };
-    const success = await saveAppData(newData, email);
+    const success = await saveAppData(newData, null);
 
     if (!success) {
       return NextResponse.json(
@@ -111,8 +111,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // ── Fetch-before-write ─────────────────────────────────────────────────
-    const fresh = await fetchFreshAppData(email);
+    // ── Fetch-before-write from shared global file ─────────────────────────
+    const fresh = await fetchFreshAppData(null);
 
     const noteIndex = fresh.stickyNotes.findIndex((n) => n.id === noteId);
     if (noteIndex === -1) {
@@ -150,7 +150,7 @@ export async function DELETE(request: Request) {
     }
 
     const newData = { ...fresh, stickyNotes: updatedNotes, updatedAt: new Date().toISOString() };
-    const success = await saveAppData(newData, email);
+    const success = await saveAppData(newData, null);
 
     if (!success) {
       return NextResponse.json(
@@ -183,7 +183,7 @@ export async function GET() {
     // ── 2. Fetch fresh data with its own guard ────────────────────────────
     let data;
     try {
-      data = await fetchFreshAppData(email);
+      data = await fetchFreshAppData(null);
     } catch (fetchErr) {
       console.error("[API CRASH LOG]: fetchFreshAppData threw in GET /api/notes:", fetchErr);
       return NextResponse.json(
