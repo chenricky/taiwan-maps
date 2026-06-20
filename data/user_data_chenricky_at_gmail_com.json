@@ -21,6 +21,17 @@
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       }
+    },
+    {
+      "id": "bm-1781985287221",
+      "lat": 24.99583884924347,
+      "lng": 121.42893705957144,
+      "label": "DGSR",
+      "createdAt": "2026-06-20T19:54:47.221Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ],
   "notes": [
