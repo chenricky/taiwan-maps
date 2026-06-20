@@ -10,6 +10,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     const email   = session?.user?.email ?? null;
+    console.log(`[GET /api/storage] session=${email ?? "guest"}`);
     const data    = await fetchAppData(email);
     return NextResponse.json(data);
   } catch (error) {
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const email   = session?.user?.email ?? null;
+    console.log(`[POST /api/storage] session=${email ?? "null (unauthenticated)"}`);
 
     // Guests cannot write
     if (!email) {

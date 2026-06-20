@@ -25,6 +25,7 @@ export async function PATCH(request: Request) {
     const email   = session?.user?.email ?? null;
     const name    = session?.user?.name  ?? "匿名";
 
+    console.log(`[PATCH /api/notes] session=${email ?? "null (unauthenticated)"}`);
     if (!email) {
       return NextResponse.json(
         { success: false, error: "Authentication required to comment" },

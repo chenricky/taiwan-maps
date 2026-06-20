@@ -34,9 +34,10 @@ export default function StickyNoteEditModal({
   onDelete,
   onClose,
 }: StickyNoteEditModalProps) {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const userEmail = session?.user?.email ?? null;
   const userName  = session?.user?.name  ?? null;
+  const sessionLoading = sessionStatus === "loading";
 
   // ── Edit mode state ────────────────────────────────────────────────────
   const [editing, setEditing]   = useState(false);
@@ -261,7 +262,13 @@ export default function StickyNoteEditModal({
 
         {/* ── Comment Input ────────────────────────────────────────────── */}
         <div className="px-4 pb-4 pt-2 border-t border-gray-100 shrink-0">
-          {userEmail ? (
+          {sessionLoading ? (
+            /* Session still resolving — show a neutral placeholder so the UI
+               doesn't flash between "logged in" and "logged out" states */
+            <p className="text-xs text-gray-400 text-center py-2 animate-pulse">
+              載入中…
+            </p>
+          ) : userEmail ? (
             <>
               {commentError && (
                 <p className="text-xs text-red-500 mb-1">{commentError}</p>

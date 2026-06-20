@@ -61,14 +61,43 @@ function toFlat(data: AppData): FlatStorageSchema {
 
 function fromFlat(flat: FlatStorageSchema): AppData {
   return {
-    bookmarks:   flat.bookmarks ?? [],
-    // Ensure every note has a `comments` array (backwards-compat with v1 notes)
-    stickyNotes: (flat.notes ?? []).map((n) => ({
-      ...n,
-      comments: Array.isArray(n.comments) ? n.comments : [],
+    bookmarks: (flat.bookmarks ?? []).map((b) => ({
+      id:        b.id        ?? `bm-legacy-${Math.random().toString(36).slice(2)}`,
+      lat:       b.lat       ?? 0,
+      lng:       b.lng       ?? 0,
+      label:     b.label     ?? "未命名書籤",
+      createdAt: b.createdAt ?? new Date().toISOString(),
     })),
-    todos:       flat.todos     ?? [],
-    updatedAt:   new Date().toISOString(),
+
+    // Ensure every note has `comments` and `createdBy` (backwards-compat with v1 notes)
+    stickyNotes: (flat.notes ?? []).map((n) => ({
+      id:        n.id        ?? `note-legacy-${Math.random().toString(36).slice(2)}`,
+      lat:       n.lat       ?? 0,
+      lng:       n.lng       ?? 0,
+      content:   n.content   ?? (n as unknown as Record<string, string>)["text"] ?? "",
+      color:     n.color     ?? "#fef68a",
+      createdAt: n.createdAt ?? new Date().toISOString(),
+      createdBy: n.createdBy ?? undefined,
+      comments:  Array.isArray(n.comments)
+        ? n.comments.map((c) => ({
+            id:        c.id        ?? `cmt-legacy-${Math.random().toString(36).slice(2)}`,
+            text:      c.text      ?? "",
+            createdAt: c.createdAt ?? new Date().toISOString(),
+            createdBy: c.createdBy ?? { name: "匿名", email: "unknown" },
+          }))
+        : [],
+    })),
+
+    todos: (flat.todos ?? []).map((t) => ({
+      id:                  t.id        ?? `todo-legacy-${Math.random().toString(36).slice(2)}`,
+      text:                t.text      ?? "",
+      completed:           t.completed ?? false,
+      reminderDate:        t.reminderDate        ?? null,
+      reminderBookmarkId:  t.reminderBookmarkId  ?? null,
+      createdAt:           t.createdAt ?? new Date().toISOString(),
+    })),
+
+    updatedAt: new Date().toISOString(),
   };
 }
 
