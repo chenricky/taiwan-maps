@@ -134,8 +134,12 @@ export async function fetchAppData(email?: string | null): Promise<AppData> {
       headers: {
         Authorization: `Bearer ${GITHUB_TOKEN}`,
         Accept: "application/vnd.github.v3+json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
       cache: "no-store",
+      next: { revalidate: 0 },
     });
 
     if (res.status === 404) {
@@ -200,8 +204,12 @@ export async function saveAppData(data: AppData, email?: string | null): Promise
         headers: {
           Authorization: `Bearer ${GITHUB_TOKEN}`,
           Accept: "application/vnd.github.v3+json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
         },
         cache: "no-store",
+        next: { revalidate: 0 },
       });
       if (headRes.ok) {
         const headData = await headRes.json();

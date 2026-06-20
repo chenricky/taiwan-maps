@@ -5,6 +5,7 @@ import { fetchAppData, saveAppData, getDefaultAppData } from "@/lib/github-stora
 import { AppData } from "@/types";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   try {
@@ -12,7 +13,14 @@ export async function GET() {
     const email   = session?.user?.email ?? null;
     console.log(`[GET /api/storage] session=${email ?? "guest"}`);
     const data    = await fetchAppData(email);
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "Surrogate-Control": "no-store",
+      },
+    });
   } catch (error) {
     console.error("[GET /api/storage] unexpected error:", error);
     return NextResponse.json(getDefaultAppData());

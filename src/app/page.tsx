@@ -180,7 +180,7 @@ export default function Home() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/storage");
+        const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
         const data: AppData = await res.json();
         setAppData(data);
       } catch (error) {
@@ -709,7 +709,7 @@ export default function Home() {
             // Re-fetch fresh data so comments added via PATCH /api/notes
             // are reflected in appData (fixes stale comment disappearing bug)
             try {
-              const res = await fetch("/api/storage", { cache: "no-store" });
+              const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
               if (res.ok) {
                 const fresh: AppData = await res.json();
                 setAppData(fresh);
