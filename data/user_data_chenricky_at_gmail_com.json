@@ -34,39 +34,6 @@
       }
     }
   ],
-  "notes": [
-    {
-      "id": "note-1781985168245",
-      "lat": 25.091368989841293,
-      "lng": 121.52406933056582,
-      "content": "note1",
-      "color": "#fef68a",
-      "createdAt": "2026-06-20T19:52:48.245Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      },
-      "comments": [
-        {
-          "id": "cmt-1781985175908-qlegp",
-          "text": "1111111",
-          "createdAt": "2026-06-20T19:52:55.908Z",
-          "createdBy": {
-            "name": "Ricky Chen",
-            "email": "chenricky@gmail.com"
-          }
-        },
-        {
-          "id": "cmt-1781985186167-4g5ok",
-          "text": "2222222",
-          "createdAt": "2026-06-20T19:53:06.167Z",
-          "createdBy": {
-            "name": "Ricky Chen",
-            "email": "chenricky@gmail.com"
-          }
-        }
-      ]
-    }
-  ],
+  "notes": [],
   "todos": []
 }
