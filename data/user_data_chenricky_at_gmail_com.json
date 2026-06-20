@@ -12,39 +12,6 @@
       }
     }
   ],
-  "notes": [
-    {
-      "id": "note-1781986091753",
-      "lat": 25.05481206915227,
-      "lng": 121.55342102050783,
-      "content": "SDCSDC",
-      "color": "#fef68a",
-      "createdAt": "2026-06-20T20:08:11.753Z",
-      "comments": [
-        {
-          "id": "cmt-1781986096165-4yim5",
-          "text": "SCWC",
-          "createdAt": "2026-06-20T20:08:16.165Z",
-          "createdBy": {
-            "name": "Ricky Chen",
-            "email": "chenricky@gmail.com"
-          }
-        },
-        {
-          "id": "cmt-1781986098433-dqdan",
-          "text": "SDCSD",
-          "createdAt": "2026-06-20T20:08:18.433Z",
-          "createdBy": {
-            "name": "Ricky Chen",
-            "email": "chenricky@gmail.com"
-          }
-        }
-      ],
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
-    }
-  ],
+  "notes": [],
   "todos": []
 }
