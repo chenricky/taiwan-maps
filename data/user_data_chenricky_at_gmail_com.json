@@ -20,10 +20,6 @@
       "content": "SDCSDC",
       "color": "#fef68a",
       "createdAt": "2026-06-20T20:08:11.753Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      },
       "comments": [
         {
           "id": "cmt-1781986096165-4yim5",
@@ -43,22 +39,14 @@
             "email": "chenricky@gmail.com"
           }
         }
-      ]
-    }
-  ],
-  "todos": [
-    {
-      "id": "todo-1781986082172",
-      "text": "todo1",
-      "completed": false,
-      "reminderDate": "2026-06-25T13:07",
-      "reminderBookmarkId": null,
-      "createdAt": "2026-06-20T20:08:02.172Z",
+      ],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       }
-    },
+    }
+  ],
+  "todos": [
     {
       "id": "todo-1781986133797",
       "text": "fqer2",
