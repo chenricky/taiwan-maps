@@ -8,11 +8,21 @@
       "content": "2cr23cr2",
       "color": "#fef68a",
       "createdAt": "2026-06-20T20:21:05.069Z",
+      "comments": [
+        {
+          "id": "cmt-1781986869040-3e5rk",
+          "text": "23dx23e",
+          "createdAt": "2026-06-20T20:21:09.040Z",
+          "createdBy": {
+            "name": "Ricky Chen",
+            "email": "chenricky@gmail.com"
+          }
+        }
+      ],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     }
   ],
   "todos": [
