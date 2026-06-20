@@ -5,7 +5,11 @@
       "lat": 25.098517457673502,
       "lng": 121.53506247872913,
       "label": "sdf sd",
-      "createdAt": "2026-06-20T19:35:51.662Z"
+      "createdAt": "2026-06-20T19:35:51.662Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ],
   "notes": [
@@ -71,7 +75,23 @@
       "completed": false,
       "reminderDate": "2026-06-25T12:35",
       "reminderBookmarkId": null,
-      "createdAt": "2026-06-20T19:35:42.500Z"
+      "createdAt": "2026-06-20T19:35:42.500Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
+    },
+    {
+      "id": "todo-1781985035383",
+      "text": "df sdf s",
+      "completed": false,
+      "reminderDate": "2026-06-27T12:50",
+      "reminderBookmarkId": null,
+      "createdAt": "2026-06-20T19:50:35.383Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ]
 }
