@@ -10,6 +10,17 @@
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       }
+    },
+    {
+      "id": "bm-1781985250654",
+      "lat": 25.02322968896724,
+      "lng": 121.51067525631026,
+      "label": "csfSEFD",
+      "createdAt": "2026-06-20T19:54:10.654Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ],
   "notes": [
