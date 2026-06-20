@@ -404,12 +404,15 @@ export default function Home() {
           }`}
         >
           <div className="p-3 space-y-3 overflow-y-auto flex-1">
-            <RoutingPanel
-              onRoute={handleRoute}
-              routeCoords={routeCoords}
-              routeDistance={routeDistance}
-              routeDuration={routeDuration}
-            />
+            {/* RoutingPanel hidden — UI disabled, code preserved */}
+            <div className="hidden">
+              <RoutingPanel
+                onRoute={handleRoute}
+                routeCoords={routeCoords}
+                routeDistance={routeDistance}
+                routeDuration={routeDuration}
+              />
+            </div>
             <BookmarksSidebar
               bookmarks={appData.bookmarks}
               onDeleteBookmark={handleDeleteBookmark}
