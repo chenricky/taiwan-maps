@@ -1,6 +1,10 @@
 /**
  * push-tourist-layer.mjs
  * Pushes the Tourist Spots layer files to GitHub via the Git Data API.
+ * Token is passed via GH_PAT environment variable (never hardcoded).
+ *
+ * Usage:
+ *   $env:GH_PAT="<your-token>"; node scripts/push-tourist-layer.mjs
  */
 import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
@@ -9,7 +13,9 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 
-const TOKEN  = "REDACTED_GITHUB_TOKEN";
+const TOKEN  = process.env.GH_PAT;
+if (!TOKEN) throw new Error("GH_PAT environment variable is not set.");
+
 const OWNER  = "chenricky";
 const REPO   = "taiwan-maps";
 const BRANCH = "master";
@@ -86,7 +92,7 @@ async function createCommit(message, treeSha, parentSha) {
 async function updateRef(commitSha) {
   await api(`/git/refs/heads/${BRANCH}`, {
     method: "PATCH",
-    body: JSON.stringify({ sha: commitSha, force: false }),
+    body: JSON.stringify({ sha: commitSha, force: true }),
   });
 }
 
@@ -121,13 +127,13 @@ console.log(newTreeSha.slice(0, 7));
 
 process.stdout.write("  Creating commit... ");
 const newCommitSha = await createCommit(
-  "feat: add Taipei Featured Tourist Spots layer (6th map layer)\n\n- preprocess-tourism.js: static WGS84 coordinate dictionary for all 51 spots\n- tourist_spots.json: pre-processed flat JSON cache (name, district, theme, lat, lng)\n- TouristSpotsLayer.tsx: amber ✨ markers with senior-friendly popup cards\n- MapComponent.tsx: showTouristLayer prop + layer mount/unmount\n- page.tsx: showTouristLayer state + '✨ 顯示精選觀光景點' toggle button\n- storage/route.ts untouched; schema {bookmarks, notes, todos} preserved",
+  "feat: add Taipei Featured Tourist Spots layer (6th map layer)\n\n- preprocess-tourism.js: static WGS84 coordinate dictionary for all 50 spots\n- tourist_spots.json: pre-processed flat JSON cache (name, district, theme, lat, lng)\n- TouristSpotsLayer.tsx: amber star markers with senior-friendly popup cards\n- MapComponent.tsx: showTouristLayer prop + layer mount/unmount\n- page.tsx: showTouristLayer state + toggle button\n- storage/route.ts untouched; schema {bookmarks, stickyNotes, todos} preserved",
   newTreeSha,
   headSha
 );
 console.log(newCommitSha.slice(0, 7));
 
-process.stdout.write(`  Updating refs/heads/${BRANCH}... `);
+process.stdout.write(`  Updating refs/heads/${BRANCH} (force)... `);
 await updateRef(newCommitSha);
 console.log("done");
 

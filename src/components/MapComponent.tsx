@@ -24,6 +24,7 @@ import MrtRouteLayer from "@/components/MrtRouteLayer";
 import MrtFacilitiesLayer from "@/components/MrtFacilitiesLayer";
 import BusTransferLayer from "@/components/BusTransferLayer";
 import TouristSpotsLayer from "@/components/TouristSpotsLayer";
+import SlopeHeatmapLayer from "@/components/SlopeHeatmapLayer";
 
 interface FlyToTarget {
   bookmark: Bookmark;
@@ -79,6 +80,7 @@ interface MapComponentProps {
   showFacilitiesLayer: boolean;
   showBusLayer: boolean;
   showTouristLayer: boolean;
+  showHeatmapLayer: boolean;
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
 }
@@ -148,6 +150,7 @@ export default function MapComponent({
   showFacilitiesLayer,
   showBusLayer,
   showTouristLayer,
+  showHeatmapLayer,
   searchResult,
   flyToTarget,
 }: MapComponentProps) {
@@ -210,6 +213,9 @@ export default function MapComponent({
 
         {/* Bus Transfer Layer */}
         {showBusLayer && <BusTransferLayer visible={showBusLayer} />}
+
+        {/* Slope Heatmap Layer — rendered BELOW other layers so markers stay visible */}
+        {showHeatmapLayer && <SlopeHeatmapLayer />}
 
         {/* Tourist Spots Layer */}
         {showTouristLayer && <TouristSpotsLayer />}

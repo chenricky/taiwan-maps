@@ -19,6 +19,83 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ),
 });
 
+// ── Layer toggle definition ────────────────────────────────────────────────────
+interface LayerToggle {
+  key: string;
+  label: string;
+  icon: string;
+  activeColor: string;   // Tailwind bg class when ON
+  activeBorder: string;  // Tailwind border class when ON
+  activeText: string;    // Tailwind text class when ON
+}
+
+const LAYER_TOGGLES: LayerToggle[] = [
+  {
+    key: "tourist",
+    label: "精選觀光景點",
+    icon: "✨",
+    activeColor: "bg-amber-500",
+    activeBorder: "border-amber-600",
+    activeText: "text-white",
+  },
+  {
+    key: "facilities",
+    label: "捷運出入口設施",
+    icon: "♿",
+    activeColor: "bg-blue-600",
+    activeBorder: "border-blue-700",
+    activeText: "text-white",
+  },
+  {
+    key: "route",
+    label: "捷運路網線",
+    icon: "🚇",
+    activeColor: "bg-indigo-600",
+    activeBorder: "border-indigo-700",
+    activeText: "text-white",
+  },
+  {
+    key: "toilet",
+    label: "夜市友善廁所",
+    icon: "🚻",
+    activeColor: "bg-green-600",
+    activeBorder: "border-green-700",
+    activeText: "text-white",
+  },
+  {
+    key: "trail",
+    label: "健走步道",
+    icon: "🥾",
+    activeColor: "bg-emerald-600",
+    activeBorder: "border-emerald-700",
+    activeText: "text-white",
+  },
+  {
+    key: "bus",
+    label: "出口公車轉乘",
+    icon: "🚌",
+    activeColor: "bg-orange-500",
+    activeBorder: "border-orange-600",
+    activeText: "text-white",
+  },
+  {
+    key: "notes",
+    label: "地圖便利貼",
+    icon: "📝",
+    activeColor: "bg-yellow-400",
+    activeBorder: "border-yellow-500",
+    activeText: "text-yellow-900",
+  },
+  {
+    key: "heatmap",
+    label: "地形坡度熱圖",
+    icon: "🗺️",
+    activeColor: "bg-rose-500",
+    activeBorder: "border-rose-600",
+    activeText: "text-white",
+  },
+];
+
 export default function Home() {
   const [appData, setAppData] = useState<AppData>({
     bookmarks: [],
@@ -28,6 +105,8 @@ export default function Home() {
   });
 
   const [loading, setLoading] = useState(true);
+
+  // Layer visibility state
   const [showNotes, setShowNotes] = useState(true);
   const [showToiletLayer, setShowToiletLayer] = useState(false);
   const [showTrailLayer, setShowTrailLayer] = useState(false);
@@ -35,8 +114,13 @@ export default function Home() {
   const [showFacilitiesLayer, setShowFacilitiesLayer] = useState(false);
   const [showBusLayer, setShowBusLayer] = useState(false);
   const [showTouristLayer, setShowTouristLayer] = useState(false);
+  const [showHeatmapLayer, setShowHeatmapLayer] = useState(false);
+
+  // Panel collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  // Floating layer panel open/close (mobile: starts closed; desktop: starts open)
+  const [layerPanelOpen, setLayerPanelOpen] = useState(true);
 
   // Click target for modals
   const [clickTarget, setClickTarget] = useState<{ lat: number; lng: number } | null>(null);
@@ -53,9 +137,32 @@ export default function Home() {
   // Search result
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
 
-  // Fly-to target with incrementing key so clicking same bookmark always re-fires
+  // Fly-to target
   const flyToKeyRef = useRef(0);
   const [flyToTarget, setFlyToTarget] = useState<{ bookmark: Bookmark; key: number } | null>(null);
+
+  // Layer active map
+  const layerActive: Record<string, boolean> = {
+    tourist: showTouristLayer,
+    facilities: showFacilitiesLayer,
+    route: showRouteLayer,
+    toilet: showToiletLayer,
+    trail: showTrailLayer,
+    bus: showBusLayer,
+    notes: showNotes,
+    heatmap: showHeatmapLayer,
+  };
+
+  const layerToggleHandlers: Record<string, () => void> = {
+    tourist: () => setShowTouristLayer((v) => !v),
+    facilities: () => setShowFacilitiesLayer((v) => !v),
+    route: () => setShowRouteLayer((v) => !v),
+    toilet: () => setShowToiletLayer((v) => !v),
+    trail: () => setShowTrailLayer((v) => !v),
+    bus: () => setShowBusLayer((v) => !v),
+    notes: () => setShowNotes((v) => !v),
+    heatmap: () => setShowHeatmapLayer((v) => !v),
+  };
 
   // Load data
   useEffect(() => {
@@ -74,21 +181,18 @@ export default function Home() {
   }, []);
 
   // Save data
-  const saveData = useCallback(
-    async (newData: AppData) => {
-      setAppData(newData);
-      try {
-        await fetch("/api/storage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newData),
-        });
-      } catch (error) {
-        console.error("Failed to save data:", error);
-      }
-    },
-    []
-  );
+  const saveData = useCallback(async (newData: AppData) => {
+    setAppData(newData);
+    try {
+      await fetch("/api/storage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newData),
+      });
+    } catch (error) {
+      console.error("Failed to save data:", error);
+    }
+  }, []);
 
   // Map click handler
   const handleMapClick = useCallback((lat: number, lng: number) => {
@@ -107,11 +211,7 @@ export default function Home() {
         label,
         createdAt: new Date().toISOString(),
       };
-      const newData = {
-        ...appData,
-        bookmarks: [...appData.bookmarks, newBookmark],
-      };
-      saveData(newData);
+      saveData({ ...appData, bookmarks: [...appData.bookmarks, newBookmark] });
       setShowBookmarkModal(false);
       setClickTarget(null);
     },
@@ -120,11 +220,7 @@ export default function Home() {
 
   const handleDeleteBookmark = useCallback(
     (id: string) => {
-      const newData = {
-        ...appData,
-        bookmarks: appData.bookmarks.filter((b) => b.id !== id),
-      };
-      saveData(newData);
+      saveData({ ...appData, bookmarks: appData.bookmarks.filter((b) => b.id !== id) });
     },
     [appData, saveData]
   );
@@ -146,11 +242,7 @@ export default function Home() {
         color,
         createdAt: new Date().toISOString(),
       };
-      const newData = {
-        ...appData,
-        stickyNotes: [...appData.stickyNotes, newNote],
-      };
-      saveData(newData);
+      saveData({ ...appData, stickyNotes: [...appData.stickyNotes, newNote] });
       setShowNoteModal(false);
       setClickTarget(null);
     },
@@ -163,18 +255,15 @@ export default function Home() {
       setRouteStart(start);
       setRouteEnd(end);
       setRouteCoords(null);
-
       const modeMap: Record<string, string> = {
         driving: "driving",
         walking: "foot",
         cycling: "cycling",
       };
-
       try {
         const url = `https://router.project-osrm.org/route/v1/${modeMap[mode]}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
         const res = await fetch(url);
         const data = await res.json();
-
         if (data.code === "Ok" && data.routes.length > 0) {
           const route = data.routes[0];
           const coords = route.geometry.coordinates.map(
@@ -203,40 +292,28 @@ export default function Home() {
         reminderBookmarkId: reminderBookmarkId || null,
         createdAt: new Date().toISOString(),
       };
-      const newData = {
-        ...appData,
-        todos: [...appData.todos, newTodo],
-      };
-      saveData(newData);
+      saveData({ ...appData, todos: [...appData.todos, newTodo] });
     },
     [appData, saveData]
   );
 
   const handleToggleTodo = useCallback(
     (id: string) => {
-      const newData = {
+      saveData({
         ...appData,
-        todos: appData.todos.map((t) =>
-          t.id === id ? { ...t, completed: !t.completed } : t
-        ),
-      };
-      saveData(newData);
+        todos: appData.todos.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
+      });
     },
     [appData, saveData]
   );
 
   const handleDeleteTodo = useCallback(
     (id: string) => {
-      const newData = {
-        ...appData,
-        todos: appData.todos.filter((t) => t.id !== id),
-      };
-      saveData(newData);
+      saveData({ ...appData, todos: appData.todos.filter((t) => t.id !== id) });
     },
     [appData, saveData]
   );
 
-  // Bookmark route shortcuts
   const handleSetRouteStart = useCallback((bm: Bookmark) => {
     setRouteStart({ lat: bm.lat, lng: bm.lng });
   }, []);
@@ -245,7 +322,6 @@ export default function Home() {
     setRouteEnd({ lat: bm.lat, lng: bm.lng });
   }, []);
 
-  // Handle bookmark click to fly to location — works every time, even for the same bookmark
   const handleSelectBookmark = useCallback((bm: Bookmark) => {
     flyToKeyRef.current += 1;
     setFlyToTarget({ bookmark: bm, key: flyToKeyRef.current });
@@ -264,117 +340,25 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-2 flex flex-col gap-1.5 z-50 shrink-0">
-        {/* Top row: logo + search */}
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold text-blue-700 flex items-center gap-2 shrink-0">
-            <span>🗺️</span> Taiwan Maps
-          </h1>
-          <div className="flex-1 flex justify-center">
-            <SearchBar onSearchResult={setSearchResult} />
-          </div>
-        </div>
-        {/* Bottom row: layer toggles — wraps on narrow screens */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Tourist Spots Toggle — FIRST */}
-          <button
-            onClick={() => setShowTouristLayer(!showTouristLayer)}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
-              showTouristLayer
-                ? "bg-amber-500 text-white border-amber-600 shadow-sm"
-                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
-            }`}
-            title="顯示/隱藏精選觀光景點"
-          >
-            ✨ {showTouristLayer ? "隱藏" : "顯示"}精選觀光景點
-          </button>
 
-          {/* MRT Facilities Toggle */}
-          <button
-            onClick={() => setShowFacilitiesLayer(!showFacilitiesLayer)}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
-              showFacilitiesLayer
-                ? "bg-blue-600 text-white border-blue-700 shadow-sm"
-                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
-            }`}
-            title="顯示/隱藏捷運出入口設施"
-          >
-            ♿ {showFacilitiesLayer ? "隱藏" : "顯示"}捷運出入口設施
-          </button>
-
-          {/* MRT Route Lines Toggle */}
-          <button
-            onClick={() => setShowRouteLayer(!showRouteLayer)}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
-              showRouteLayer
-                ? "bg-indigo-600 text-white border-indigo-700 shadow-sm"
-                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
-            }`}
-            title="顯示/隱藏捷運路網線"
-          >
-            🚇 {showRouteLayer ? "隱藏" : "顯示"}捷運路網線
-          </button>
-
-          {/* Friendly Toilet Toggle */}
-          <button
-            onClick={() => setShowToiletLayer(!showToiletLayer)}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
-              showToiletLayer
-                ? "bg-green-600 text-white border-green-700 shadow-sm"
-                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
-            }`}
-            title="顯示/隱藏夜市友善廁所"
-          >
-            🚻 {showToiletLayer ? "隱藏" : "顯示"}夜市友善廁所
-          </button>
-
-          {/* Walking Trail Toggle */}
-          <button
-            onClick={() => setShowTrailLayer(!showTrailLayer)}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
-              showTrailLayer
-                ? "bg-emerald-600 text-white border-emerald-700 shadow-sm"
-                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
-            }`}
-            title="顯示/隱藏健走步道"
-          >
-            🥾 {showTrailLayer ? "隱藏" : "顯示"}健走步道
-          </button>
-
-          {/* Bus Transfer Toggle */}
-          <button
-            onClick={() => setShowBusLayer(!showBusLayer)}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all border whitespace-nowrap ${
-              showBusLayer
-                ? "bg-orange-500 text-white border-orange-600 shadow-sm"
-                : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
-            }`}
-            title="顯示/隱藏出口公車轉乘"
-          >
-            🚌 {showBusLayer ? "隱藏" : "顯示"}出口公車轉乘
-          </button>
-
-          {/* Notes Toggle */}
-          <button
-            onClick={() => setShowNotes(!showNotes)}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors border whitespace-nowrap ${
-              showNotes
-                ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                : "bg-gray-100 text-gray-500 border-gray-300"
-            }`}
-          >
-            📝 {showNotes ? "Hide" : "Show"} Notes
-          </button>
+      {/* ── Header: logo + search only (no layer toggles here) ─────────────── */}
+      <header className="bg-white border-b border-gray-200 px-3 py-2 flex items-center gap-3 z-50 shrink-0">
+        <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
+          <span>🗺️</span>
+          <span className="hidden sm:inline">Taiwan Maps</span>
+        </h1>
+        <div className="flex-1 min-w-0">
+          <SearchBar onSearchResult={setSearchResult} />
         </div>
       </header>
 
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left sidebar */}
+      {/* ── Main content ────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex overflow-hidden relative">
+
+        {/* Left sidebar (desktop) */}
         <div
           className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shrink-0 overflow-hidden ${
-            sidebarCollapsed ? "w-0 border-r-0" : "w-72"
+            sidebarCollapsed ? "w-0 border-r-0" : "w-64 md:w-72"
           }`}
         >
           <div className="p-3 space-y-3 overflow-y-auto flex-1">
@@ -401,9 +385,7 @@ export default function Home() {
           title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
         >
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${
-              sidebarCollapsed ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 text-gray-500 transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -413,7 +395,7 @@ export default function Home() {
         </button>
 
         {/* Map area */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-w-0">
           <MapComponent
             bookmarks={appData.bookmarks}
             stickyNotes={appData.stickyNotes}
@@ -428,9 +410,143 @@ export default function Home() {
             showRouteLayer={showRouteLayer}
             showBusLayer={showBusLayer}
             showTouristLayer={showTouristLayer}
+            showHeatmapLayer={showHeatmapLayer}
             searchResult={searchResult}
             flyToTarget={flyToTarget}
           />
+
+          {/* ── Floating Layer Control Panel ──────────────────────────────── */}
+          {/*
+            DESKTOP  (md+): top-left corner, vertical list, max-h scroll
+            MOBILE   (<md): bottom sheet, 2-col grid, pinned above map edge
+          */}
+
+          {/* ── DESKTOP panel: top-left, vertical, scrollable ── */}
+          <div className="hidden md:flex absolute top-3 left-3 z-[1000] flex-col gap-0 pointer-events-none">
+            {/* Panel card */}
+            <div
+              className="pointer-events-auto bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+              style={{ maxHeight: "85vh" }}
+            >
+              {/* Panel header / collapse toggle */}
+              <button
+                onClick={() => setLayerPanelOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-xs font-semibold text-gray-700 tracking-wide uppercase">
+                  🗂️ 地圖圖層
+                </span>
+                <svg
+                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${layerPanelOpen ? "" : "rotate-180"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
+
+              {/* Toggle buttons — vertical list */}
+              {layerPanelOpen && (
+                <div className="overflow-y-auto pr-0.5" style={{ maxHeight: "calc(85vh - 44px)" }}>
+                  <div className="flex flex-col gap-1 p-2">
+                    {LAYER_TOGGLES.map((layer) => {
+                      const isOn = layerActive[layer.key];
+                      return (
+                        <button
+                          key={layer.key}
+                          onClick={layerToggleHandlers[layer.key]}
+                          title={`${isOn ? "隱藏" : "顯示"} ${layer.label}`}
+                          className={`
+                            flex items-center gap-2.5 w-full min-h-[44px] px-3 py-2
+                            rounded-lg border font-medium text-sm
+                            transition-all duration-150 text-left
+                            ${isOn
+                              ? `${layer.activeColor} ${layer.activeBorder} ${layer.activeText} shadow-sm`
+                              : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:border-gray-300"
+                            }
+                          `}
+                        >
+                          <span className="text-base leading-none shrink-0">{layer.icon}</span>
+                          <span className="leading-tight">
+                            {isOn ? "隱藏" : "顯示"}{layer.label}
+                          </span>
+                          {/* Active indicator dot */}
+                          {isOn && (
+                            <span className="ml-auto w-2 h-2 rounded-full bg-white/70 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── MOBILE panel: bottom sheet, 2-col grid ── */}
+          <div className="md:hidden absolute bottom-4 left-4 right-4 z-[1000] pointer-events-none">
+            <div className="pointer-events-auto bg-white/97 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+              {/* Mobile panel header */}
+              <button
+                onClick={() => setLayerPanelOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200 active:bg-gray-100"
+              >
+                <span className="text-sm font-semibold text-gray-700">
+                  🗂️ 地圖圖層控制
+                </span>
+                <div className="flex items-center gap-2">
+                  {/* Active layer count badge */}
+                  {Object.values(layerActive).filter(Boolean).length > 0 && (
+                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {Object.values(layerActive).filter(Boolean).length}
+                    </span>
+                  )}
+                  <svg
+                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${layerPanelOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                </div>
+              </button>
+
+              {/* 2-column grid of toggle buttons */}
+              {layerPanelOpen && (
+                <div className="p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {LAYER_TOGGLES.map((layer) => {
+                      const isOn = layerActive[layer.key];
+                      return (
+                        <button
+                          key={layer.key}
+                          onClick={layerToggleHandlers[layer.key]}
+                          className={`
+                            flex items-center gap-2 min-h-[44px] w-full px-3 py-2.5
+                            rounded-xl border font-medium text-sm
+                            transition-all duration-150 text-left
+                            ${isOn
+                              ? `${layer.activeColor} ${layer.activeBorder} ${layer.activeText} shadow-sm`
+                              : "bg-gray-50 border-gray-200 text-gray-600 active:bg-gray-100"
+                            }
+                          `}
+                        >
+                          <span className="text-base leading-none shrink-0">{layer.icon}</span>
+                          <span className="text-xs leading-tight">
+                            {isOn ? "隱藏" : "顯示"}<br />
+                            <span className="font-semibold">{layer.label}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* ── End Floating Layer Control Panel ─────────────────────────── */}
         </div>
 
         {/* Right panel toggle */}
@@ -440,9 +556,7 @@ export default function Home() {
           title={rightPanelCollapsed ? "Show todos" : "Hide todos"}
         >
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${
-              rightPanelCollapsed ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 text-gray-500 transition-transform ${rightPanelCollapsed ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -454,7 +568,7 @@ export default function Home() {
         {/* Right todo panel */}
         <div
           className={`bg-white border-l border-gray-200 transition-all duration-300 flex flex-col shrink-0 overflow-hidden ${
-            rightPanelCollapsed ? "w-0 border-l-0" : "w-72"
+            rightPanelCollapsed ? "w-0 border-l-0" : "w-64 md:w-72"
           }`}
         >
           <div className="p-3 overflow-y-auto flex-1">
@@ -469,7 +583,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ──────────────────────────────────────────────────────────── */}
       {showBookmarkModal && clickTarget && (
         <BookmarkModal
           lat={clickTarget.lat}
@@ -495,15 +609,21 @@ export default function Home() {
         />
       )}
 
-      {/* Status bar */}
+      {/* ── Status bar ──────────────────────────────────────────────────────── */}
       <footer className="bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex items-center justify-between shrink-0">
-        <span>
-          Bookmarks: {appData.bookmarks.length} | Notes: {appData.stickyNotes.length} | Todos: {appData.todos.length}
-          {showFacilitiesLayer && " | ♿ 出入口設施 ON"}
-          {showRouteLayer && " | 🚇 路網線 ON"}
-          {showToiletLayer && " | 🚻 友善廁所 ON"}
+        <span className="truncate">
+          📌 {appData.bookmarks.length} &nbsp;|&nbsp;
+          📝 {appData.stickyNotes.length} &nbsp;|&nbsp;
+          ✅ {appData.todos.length}
+          {showTouristLayer && " | ✨ 景點 ON"}
+          {showFacilitiesLayer && " | ♿ 設施 ON"}
+          {showRouteLayer && " | 🚇 路網 ON"}
+          {showToiletLayer && " | 🚻 廁所 ON"}
+          {showTrailLayer && " | 🥾 步道 ON"}
+          {showBusLayer && " | 🚌 公車 ON"}
+          {showHeatmapLayer && " | 🗺️ 熱圖 ON"}
         </span>
-        <span>OpenStreetMap &copy; contributors</span>
+        <span className="shrink-0 ml-2">OpenStreetMap &copy;</span>
       </footer>
     </div>
   );

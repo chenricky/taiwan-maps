@@ -1,4 +1,4 @@
-const TOKEN = "REDACTED_GITHUB_PAT";
+const TOKEN = process.env.GITHUB_TOKEN;
 const url = "https://api.github.com/repos/chenricky/taiwan-maps/contents/data/user_data.json";
 
 const res = await fetch(url, {
