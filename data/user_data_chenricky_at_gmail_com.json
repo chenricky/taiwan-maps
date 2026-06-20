@@ -1,17 +1,5 @@
 {
-  "bookmarks": [
-    {
-      "id": "bm-1781986116717",
-      "lat": 25.08995196522158,
-      "lng": 121.52355194091798,
-      "label": "SDCV",
-      "createdAt": "2026-06-20T20:08:36.717Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
-    }
-  ],
+  "bookmarks": [],
   "notes": [],
   "todos": []
 }
