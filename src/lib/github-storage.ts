@@ -18,7 +18,7 @@ import { AppData, Bookmark, StickyNote, TodoItem } from "@/types";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN  || "";
 const REPO_OWNER   = process.env.GITHUB_USERNAME || process.env.REPO_OWNER || "";
 const REPO_NAME    = process.env.GITHUB_REPO    || process.env.REPO_NAME  || "";
-const BRANCH       = "main";
+const BRANCH       = process.env.GITHUB_BRANCH || "master";
 
 // ── Email → safe filename ──────────────────────────────────────────────────
 /**

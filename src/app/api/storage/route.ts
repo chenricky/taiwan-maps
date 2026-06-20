@@ -14,49 +14,89 @@ export async function GET() {
     const data    = await fetchAppData(email);
     return NextResponse.json(data);
   } catch (error) {
-    console.error("[GET /api/storage]", error);
+    console.error("[GET /api/storage] unexpected error:", error);
     return NextResponse.json(getDefaultAppData());
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const email   = session?.user?.email ?? null;
-    console.log(`[POST /api/storage] session=${email ?? "null (unauthenticated)"}`);
+    // ── 1. Resolve session with bulletproof fallbacks ──────────────────────
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (sessionErr) {
+      console.error("[POST /api/storage] getServerSession threw:", sessionErr);
+    }
+
+    const userEmail = session?.user?.email || null;
+    const userName  = session?.user?.name
+      || (userEmail ? userEmail.split("@")[0] : null)
+      || "使用者";
+
+    console.log(`[POST /api/storage] session email=${userEmail ?? "null"} name=${userName}`);
 
     // Guests cannot write
-    if (!email) {
+    if (!userEmail) {
       return NextResponse.json(
         { success: false, error: "Authentication required to save data" },
         { status: 401 }
       );
     }
 
-    const body: AppData = await request.json();
+    // ── 2. Parse request body defensively ─────────────────────────────────
+    let body: AppData;
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      console.error("[POST /api/storage] failed to parse request body:", parseErr);
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
 
-    // Defensive defaults – ensure all required arrays are present
+    // ── 3. Normalise arrays + stamp createdBy on any item missing it ───────
+    const createdByField = { name: userName, email: userEmail };
+
     const data: AppData = {
-      bookmarks:   Array.isArray(body.bookmarks)   ? body.bookmarks   : [],
-      stickyNotes: Array.isArray(body.stickyNotes) ? body.stickyNotes : [],
-      todos:       Array.isArray(body.todos)        ? body.todos        : [],
-      updatedAt:   new Date().toISOString(),
+      // Bookmarks don't carry a createdBy field — pass through as-is
+      bookmarks: Array.isArray(body.bookmarks) ? body.bookmarks : [],
+
+      stickyNotes: Array.isArray(body.stickyNotes)
+        ? body.stickyNotes.map((n) => ({
+            ...n,
+            comments: Array.isArray(n.comments) ? n.comments : [],
+            createdBy: n.createdBy ?? createdByField,
+          }))
+        : [],
+
+      todos: Array.isArray(body.todos)
+        ? body.todos.map((t) => ({
+            ...t,
+            createdBy: (t as unknown as Record<string, unknown>)["createdBy"] ?? createdByField,
+          }))
+        : [],
+
+      updatedAt: new Date().toISOString(),
     };
 
-    const success = await saveAppData(data, email);
+    // ── 4. Persist to GitHub ───────────────────────────────────────────────
+    const success = await saveAppData(data, userEmail);
 
     if (success) {
       return NextResponse.json({ success: true, data });
     }
 
+    console.error("[POST /api/storage] saveAppData returned false — GitHub write failed");
     return NextResponse.json(
       { success: false, error: "Failed to persist data to GitHub" },
       { status: 500 }
     );
   } catch (error) {
-    console.error("[POST /api/storage]", error);
+    console.error("[POST /api/storage] unhandled exception:", error);
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
+      { success: false, error: "Internal server error", detail: String(error) },
       { status: 500 }
     );
   }
