@@ -1,5 +1,18 @@
 {
   "bookmarks": [],
   "notes": [],
-  "todos": []
+  "todos": [
+    {
+      "id": "todo-1781986082172",
+      "text": "todo1",
+      "completed": false,
+      "reminderDate": "2026-06-25T13:07",
+      "reminderBookmarkId": null,
+      "createdAt": "2026-06-20T20:08:02.172Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
+    }
+  ]
 }
