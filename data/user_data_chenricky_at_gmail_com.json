@@ -12,7 +12,17 @@
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       },
-      "comments": []
+      "comments": [
+        {
+          "id": "cmt-1781986096165-4yim5",
+          "text": "SCWC",
+          "createdAt": "2026-06-20T20:08:16.165Z",
+          "createdBy": {
+            "name": "Ricky Chen",
+            "email": "chenricky@gmail.com"
+          }
+        }
+      ]
     }
   ],
   "todos": [
@@ -22,11 +32,7 @@
       "completed": false,
       "reminderDate": "2026-06-25T13:07",
       "reminderBookmarkId": null,
-      "createdAt": "2026-06-20T20:08:02.172Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
+      "createdAt": "2026-06-20T20:08:02.172Z"
     }
   ]
 }
