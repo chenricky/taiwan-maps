@@ -5,7 +5,11 @@
       "lat": 25.04470232321869,
       "lng": 121.53849371822562,
       "label": "bmk1",
-      "createdAt": "2026-06-20T19:52:07.933Z"
+      "createdAt": "2026-06-20T19:52:07.933Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ],
   "notes": [
@@ -49,7 +53,11 @@
       "completed": false,
       "reminderDate": "2026-06-26T12:51",
       "reminderBookmarkId": null,
-      "createdAt": "2026-06-20T19:51:39.775Z"
+      "createdAt": "2026-06-20T19:51:39.775Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     },
     {
       "id": "todo-1781985119550",
@@ -57,7 +65,11 @@
       "completed": false,
       "reminderDate": "2026-06-26T12:51",
       "reminderBookmarkId": null,
-      "createdAt": "2026-06-20T19:51:59.550Z"
+      "createdAt": "2026-06-20T19:51:59.550Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     },
     {
       "id": "todo-1781985141898",
@@ -65,7 +77,23 @@
       "completed": false,
       "reminderDate": "2026-07-02T12:52",
       "reminderBookmarkId": "bm-1781985127933",
-      "createdAt": "2026-06-20T19:52:21.898Z"
+      "createdAt": "2026-06-20T19:52:21.898Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
+    },
+    {
+      "id": "todo-1781985205556",
+      "text": "todo3",
+      "completed": false,
+      "reminderDate": null,
+      "reminderBookmarkId": null,
+      "createdAt": "2026-06-20T19:53:25.556Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ]
 }
