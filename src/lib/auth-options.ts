@@ -12,6 +12,7 @@
 import type { NextAuthOptions, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
+import { fetchFreshAppData } from "@/lib/github-storage";
 
 if (!process.env.NEXTAUTH_SECRET) {
   console.error("[auth-options] ⚠️  NEXTAUTH_SECRET is not set — sessions will not work!");
@@ -44,6 +45,31 @@ export const authOptions: NextAuthOptions = {
   trustHost: true,
 
   callbacks: {
+    /**
+     * Whitelist gatekeeper — only allow sign-in if the email is the primary
+     * admin or is present in the `invitedUsers` array stored in GitHub.
+     */
+    async signIn({ user }: { user: { email?: string | null } }) {
+      if (!user.email) return false;
+
+      const loginEmail = user.email.toLowerCase();
+
+      // 1. Always allow the primary admin
+      if (loginEmail === "chenricky@gmail.com") return true;
+
+      // 2. Fetch fresh data from GitHub to check the whitelist
+      try {
+        const data = await fetchFreshAppData(null); // reads the shared user_data.json
+        const whitelist = (data.invitedUsers ?? []).map((e: string) => e.toLowerCase());
+        if (whitelist.includes(loginEmail)) return true;
+      } catch (err) {
+        console.error("[auth-options] Whitelist check failed:", err);
+      }
+
+      // 3. Reject — redirect to a friendly error page
+      return "/auth/access-denied";
+    },
+
     /**
      * Persist email + name into the JWT token on sign-in.
      * Without this, token.email is undefined and the session is empty.

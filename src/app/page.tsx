@@ -11,6 +11,7 @@ import BookmarkModal from "@/components/BookmarkModal";
 import StickyNoteModal from "@/components/StickyNoteModal";
 import StickyNoteEditModal from "@/components/StickyNoteEditModal";
 import TodoPanel from "@/components/TodoPanel";
+import InviteManagerModal from "@/components/InviteManagerModal";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
@@ -105,11 +106,17 @@ export default function Home() {
   const userName  = session?.user?.name  ?? null;
 
   const [appData, setAppData] = useState<AppData>({
-    bookmarks: [],
-    stickyNotes: [],
-    todos: [],
-    updatedAt: new Date().toISOString(),
+    bookmarks:    [],
+    stickyNotes:  [],
+    todos:        [],
+    invitedUsers: [],
+    updatedAt:    new Date().toISOString(),
   });
+
+  // Admin member-management modal
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const ADMIN_EMAIL = "chenricky@gmail.com";
+  const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
 
   const [loading, setLoading] = useState(true);
 
@@ -204,10 +211,11 @@ export default function Home() {
         }
 
         const safeData: AppData = {
-          bookmarks:   Array.isArray(payload.bookmarks)   ? (payload.bookmarks   as AppData["bookmarks"])   : [],
-          stickyNotes: Array.isArray(payload.stickyNotes) ? (payload.stickyNotes as AppData["stickyNotes"]) : [],
-          todos:       Array.isArray(payload.todos)        ? (payload.todos        as AppData["todos"])        : [],
-          updatedAt:   typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
+          bookmarks:    Array.isArray(payload.bookmarks)    ? (payload.bookmarks    as AppData["bookmarks"])    : [],
+          stickyNotes:  Array.isArray(payload.stickyNotes)  ? (payload.stickyNotes  as AppData["stickyNotes"])  : [],
+          todos:        Array.isArray(payload.todos)         ? (payload.todos         as AppData["todos"])        : [],
+          invitedUsers: Array.isArray(payload.invitedUsers) ? (payload.invitedUsers as AppData["invitedUsers"]) : [],
+          updatedAt:    typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
         };
 
         if (!Array.isArray(payload.bookmarks) || !Array.isArray(payload.stickyNotes) || !Array.isArray(payload.todos)) {
@@ -442,6 +450,17 @@ export default function Home() {
               <span>👤</span>
               <span>{userName ?? userEmail} 您好</span>
             </span>
+          )}
+
+          {/* ⚙️ Admin member-management button — only visible to admin */}
+          {isAdmin && (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="min-h-[44px] px-3 py-1.5 rounded-lg border border-purple-300 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 text-sm font-semibold transition-colors whitespace-nowrap"
+              title="管理成員白名單"
+            >
+              ⚙️ 成員管理
+            </button>
           )}
 
           {/* Login / Logout toggle button — min-h-[44px] for senior touch target */}
@@ -748,6 +767,28 @@ export default function Home() {
               }
             } catch {
               // Silent — stale data is better than a crash
+            }
+          }}
+        />
+      )}
+
+      {/* ── Admin: Invite Manager Modal ─────────────────────────────────────── */}
+      {showInviteModal && isAdmin && (
+        <InviteManagerModal
+          invitedUsers={appData.invitedUsers}
+          onClose={() => setShowInviteModal(false)}
+          onRefresh={async () => {
+            try {
+              const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
+              if (res.ok) {
+                const fresh = await res.json();
+                setAppData((prev) => ({
+                  ...prev,
+                  invitedUsers: Array.isArray(fresh.invitedUsers) ? fresh.invitedUsers : prev.invitedUsers,
+                }));
+              }
+            } catch {
+              // Silent — stale list is acceptable
             }
           }}
         />

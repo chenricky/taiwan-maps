@@ -46,16 +46,20 @@ function githubApiUrl(filePath: string): string {
 
 // ── Flat on-disk schema ────────────────────────────────────────────────────
 interface FlatStorageSchema {
-  bookmarks: Bookmark[];
-  notes:     StickyNote[];
-  todos:     TodoItem[];
+  bookmarks:    Bookmark[];
+  notes:        StickyNote[];
+  todos:        TodoItem[];
+  invitedUsers: string[];
 }
+
+const ADMIN_EMAIL = "chenricky@gmail.com";
 
 function toFlat(data: AppData): FlatStorageSchema {
   return {
-    bookmarks: data.bookmarks   ?? [],
-    notes:     data.stickyNotes ?? [],
-    todos:     data.todos       ?? [],
+    bookmarks:    data.bookmarks    ?? [],
+    notes:        data.stickyNotes  ?? [],
+    todos:        data.todos        ?? [],
+    invitedUsers: data.invitedUsers ?? [ADMIN_EMAIL],
   };
 }
 
@@ -187,7 +191,18 @@ function fromFlat(flat: FlatStorageSchema): AppData {
     }
   });
 
-  return { bookmarks, stickyNotes, todos, updatedAt: new Date().toISOString() };
+  // ── Invited Users ─────────────────────────────────────────────────────────
+  const rawInvited = (flat as unknown as Record<string, unknown>)["invitedUsers"];
+  const invitedUsers: string[] = Array.isArray(rawInvited)
+    ? rawInvited.filter((e): e is string => typeof e === "string")
+    : [ADMIN_EMAIL];
+
+  // Always ensure admin is in the list
+  if (!invitedUsers.map((e) => e.toLowerCase()).includes(ADMIN_EMAIL)) {
+    invitedUsers.unshift(ADMIN_EMAIL);
+  }
+
+  return { bookmarks, stickyNotes, todos, invitedUsers, updatedAt: new Date().toISOString() };
 }
 
 // ── Per-user in-process cache ──────────────────────────────────────────────
@@ -197,10 +212,11 @@ const shaCache  = new Map<string, string>();
 
 export function getDefaultAppData(): AppData {
   return {
-    bookmarks:   [],
-    stickyNotes: [],
-    todos:       [],
-    updatedAt:   new Date().toISOString(),
+    bookmarks:    [],
+    stickyNotes:  [],
+    todos:        [],
+    invitedUsers: [ADMIN_EMAIL],
+    updatedAt:    new Date().toISOString(),
   };
 }
 
@@ -270,9 +286,10 @@ export async function fetchAppData(email?: string | null): Promise<AppData> {
     // Tolerate files saved with the old schema (had stickyNotes key)
     const flatAny = (flat as unknown) as Record<string, unknown>;
     const normalised: FlatStorageSchema = {
-      bookmarks: flat.bookmarks ?? (flatAny["bookmarks"] as Bookmark[])    ?? [],
-      notes:     flat.notes     ?? (flatAny["stickyNotes"] as StickyNote[]) ?? [],
-      todos:     flat.todos     ?? [],
+      bookmarks:    flat.bookmarks    ?? (flatAny["bookmarks"] as Bookmark[])    ?? [],
+      notes:        flat.notes        ?? (flatAny["stickyNotes"] as StickyNote[]) ?? [],
+      todos:        flat.todos        ?? [],
+      invitedUsers: flat.invitedUsers ?? (flatAny["invitedUsers"] as string[])   ?? [ADMIN_EMAIL],
     };
 
     let appData: AppData;

@@ -51,10 +51,12 @@ export interface TodoItem {
 }
 
 export interface AppData {
-  bookmarks:   Bookmark[];
-  stickyNotes: StickyNote[];
-  todos:       TodoItem[];
-  updatedAt:   string;
+  bookmarks:    Bookmark[];
+  stickyNotes:  StickyNote[];
+  todos:        TodoItem[];
+  updatedAt:    string;
+  /** Whitelist of Google emails allowed to sign in (admin-managed) */
+  invitedUsers: string[];
 }
 
 export interface RoutePoint {

@@ -43,10 +43,11 @@ export async function GET() {
 
     // ── 3. Validate shape before returning ────────────────────────────────
     const safeData: AppData = {
-      bookmarks:   Array.isArray(data.bookmarks)   ? data.bookmarks   : [],
-      stickyNotes: Array.isArray(data.stickyNotes) ? data.stickyNotes : [],
-      todos:       Array.isArray(data.todos)        ? data.todos        : [],
-      updatedAt:   data.updatedAt ?? new Date().toISOString(),
+      bookmarks:    Array.isArray(data.bookmarks)    ? data.bookmarks    : [],
+      stickyNotes:  Array.isArray(data.stickyNotes)  ? data.stickyNotes  : [],
+      todos:        Array.isArray(data.todos)         ? data.todos        : [],
+      invitedUsers: Array.isArray(data.invitedUsers) ? data.invitedUsers : ["chenricky@gmail.com"],
+      updatedAt:    data.updatedAt ?? new Date().toISOString(),
     };
 
     return NextResponse.json(safeData, {
@@ -129,6 +130,9 @@ export async function POST(request: Request) {
             createdBy: t.createdBy ?? createdByField,
           }))
         : [],
+
+      // Preserve invitedUsers from the stored data — POST should not overwrite it
+      invitedUsers: Array.isArray(body.invitedUsers) ? body.invitedUsers : ["chenricky@gmail.com"],
 
       updatedAt: new Date().toISOString(),
     };
