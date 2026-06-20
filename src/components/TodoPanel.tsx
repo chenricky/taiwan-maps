@@ -125,7 +125,12 @@ export default function TodoPanel({
             </button>
             <div className="flex-1 min-w-0">
               <div className="text-sm text-gray-800">{todo.text}</div>
-              <div className="flex gap-2 mt-1">
+              <div className="flex flex-wrap gap-2 mt-1">
+                {todo.createdBy?.name && (
+                  <span className="text-xs text-gray-400">
+                    👤 {todo.createdBy.name}
+                  </span>
+                )}
                 {todo.reminderDate && (
                   <span className="text-xs text-blue-500">
                     🕐 {new Date(todo.reminderDate).toLocaleString()}

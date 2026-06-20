@@ -44,6 +44,11 @@ export default function BookmarksSidebar({
                 <div className="text-xs text-gray-400">
                   {bm.lat.toFixed(4)}, {bm.lng.toFixed(4)}
                 </div>
+                {bm.createdBy?.name && (
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    👤 {bm.createdBy.name}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

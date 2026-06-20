@@ -222,12 +222,15 @@ export default function Home() {
         lng: clickTarget.lng,
         label,
         createdAt: new Date().toISOString(),
+        createdBy: userEmail
+          ? { name: userName ?? userEmail.split("@")[0], email: userEmail }
+          : undefined,
       };
       saveData({ ...appData, bookmarks: [...appData.bookmarks, newBookmark] });
       setShowBookmarkModal(false);
       setClickTarget(null);
     },
-    [clickTarget, appData, saveData]
+    [clickTarget, appData, saveData, userEmail, userName]
   );
 
   const handleDeleteBookmark = useCallback(
@@ -336,10 +339,13 @@ export default function Home() {
         reminderDate: reminderDate || null,
         reminderBookmarkId: reminderBookmarkId || null,
         createdAt: new Date().toISOString(),
+        createdBy: userEmail
+          ? { name: userName ?? userEmail.split("@")[0], email: userEmail }
+          : undefined,
       };
       saveData({ ...appData, todos: [...appData.todos, newTodo] });
     },
-    [appData, saveData]
+    [appData, saveData, userEmail, userName]
   );
 
   const handleToggleTodo = useCallback(
@@ -698,7 +704,20 @@ export default function Home() {
           note={editingNote}
           onSave={handleUpdateNote}
           onDelete={handleDeleteNote}
-          onClose={() => setEditingNote(null)}
+          onClose={async () => {
+            setEditingNote(null);
+            // Re-fetch fresh data so comments added via PATCH /api/notes
+            // are reflected in appData (fixes stale comment disappearing bug)
+            try {
+              const res = await fetch("/api/storage", { cache: "no-store" });
+              if (res.ok) {
+                const fresh: AppData = await res.json();
+                setAppData(fresh);
+              }
+            } catch {
+              // Silent — stale data is better than a crash
+            }
+          }}
         />
       )}
 

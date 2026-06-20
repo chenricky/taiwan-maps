@@ -60,8 +60,12 @@ export async function POST(request: Request) {
     const createdByField = { name: userName, email: userEmail };
 
     const data: AppData = {
-      // Bookmarks don't carry a createdBy field — pass through as-is
-      bookmarks: Array.isArray(body.bookmarks) ? body.bookmarks : [],
+      bookmarks: Array.isArray(body.bookmarks)
+        ? body.bookmarks.map((b) => ({
+            ...b,
+            createdBy: b.createdBy ?? createdByField,
+          }))
+        : [],
 
       stickyNotes: Array.isArray(body.stickyNotes)
         ? body.stickyNotes.map((n) => ({
@@ -74,7 +78,7 @@ export async function POST(request: Request) {
       todos: Array.isArray(body.todos)
         ? body.todos.map((t) => ({
             ...t,
-            createdBy: (t as unknown as Record<string, unknown>)["createdBy"] ?? createdByField,
+            createdBy: t.createdBy ?? createdByField,
           }))
         : [],
 

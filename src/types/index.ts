@@ -1,15 +1,18 @@
-export interface Bookmark {
-  id: string;
-  lat: number;
-  lng: number;
-  label: string;
-  createdAt: string;
-}
-
-// ── Sticky Note author / commenter identity ────────────────────────────────
+// ── Shared author identity ─────────────────────────────────────────────────
 export interface NoteAuthor {
   name:  string;
   email: string;
+}
+
+// ── Bookmark ───────────────────────────────────────────────────────────────
+export interface Bookmark {
+  id:        string;
+  lat:       number;
+  lng:       number;
+  label:     string;
+  createdAt: string;
+  /** Optional — bookmarks created before auth was added won't have this */
+  createdBy?: NoteAuthor;
 }
 
 // ── Individual comment inside a sticky note ────────────────────────────────
@@ -35,13 +38,16 @@ export interface StickyNote {
   comments:  NoteComment[];
 }
 
+// ── Todo Item ──────────────────────────────────────────────────────────────
 export interface TodoItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  reminderDate?: string | null;
+  id:                  string;
+  text:                string;
+  completed:           boolean;
+  reminderDate?:       string | null;
   reminderBookmarkId?: string | null;
-  createdAt: string;
+  createdAt:           string;
+  /** Optional — todos created before auth was added won't have this */
+  createdBy?: NoteAuthor;
 }
 
 export interface AppData {

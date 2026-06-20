@@ -17,6 +17,7 @@ import { fetchFreshAppData, saveAppData, getDefaultAppData } from "@/lib/github-
 import { NoteComment, StickyNote } from "@/types";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 // ── PATCH: add a comment ───────────────────────────────────────────────────
 export async function PATCH(request: Request) {
