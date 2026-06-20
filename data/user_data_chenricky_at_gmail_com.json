@@ -12,7 +12,21 @@
       }
     }
   ],
-  "notes": [],
+  "notes": [
+    {
+      "id": "note-1781985168245",
+      "lat": 25.091368989841293,
+      "lng": 121.52406933056582,
+      "content": "note1",
+      "color": "#fef68a",
+      "createdAt": "2026-06-20T19:52:48.245Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      },
+      "comments": []
+    }
+  ],
   "todos": [
     {
       "id": "todo-1781985099775",
