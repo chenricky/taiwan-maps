@@ -50,6 +50,7 @@ interface FlatStorageSchema {
   notes:        StickyNote[];
   todos:        TodoItem[];
   invitedUsers: string[];
+  updatedAt?:   string;
 }
 
 const ADMIN_EMAIL = "chenricky@gmail.com";
@@ -60,6 +61,7 @@ function toFlat(data: AppData): FlatStorageSchema {
     notes:        data.stickyNotes  ?? [],
     todos:        data.todos        ?? [],
     invitedUsers: data.invitedUsers ?? [ADMIN_EMAIL],
+    updatedAt:    data.updatedAt,
   };
 }
 
@@ -202,7 +204,7 @@ function fromFlat(flat: FlatStorageSchema): AppData {
     invitedUsers.unshift(ADMIN_EMAIL);
   }
 
-  return { bookmarks, stickyNotes, todos, invitedUsers, updatedAt: new Date().toISOString() };
+  return { bookmarks, stickyNotes, todos, invitedUsers, updatedAt: flat.updatedAt ?? new Date().toISOString() };
 }
 
 // ── Per-user in-process cache ──────────────────────────────────────────────
@@ -290,6 +292,7 @@ export async function fetchAppData(email?: string | null): Promise<AppData> {
       notes:        flat.notes        ?? (flatAny["stickyNotes"] as StickyNote[]) ?? [],
       todos:        flat.todos        ?? [],
       invitedUsers: flat.invitedUsers ?? (flatAny["invitedUsers"] as string[])   ?? [ADMIN_EMAIL],
+      updatedAt:    flat.updatedAt    ?? (flatAny["updatedAt"] as string | undefined),
     };
 
     let appData: AppData;

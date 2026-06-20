@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { AppData, Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
+import { Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
 import SearchBar from "@/components/SearchBar";
 import RoutingPanel from "@/components/RoutingPanel";
 import BookmarksSidebar from "@/components/BookmarksSidebar";
@@ -12,6 +12,7 @@ import StickyNoteModal from "@/components/StickyNoteModal";
 import StickyNoteEditModal from "@/components/StickyNoteEditModal";
 import TodoPanel from "@/components/TodoPanel";
 import InviteManagerModal from "@/components/InviteManagerModal";
+import { useAppData } from "@/hooks/useAppData";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
@@ -105,20 +106,13 @@ export default function Home() {
   const userEmail = session?.user?.email ?? null;
   const userName  = session?.user?.name  ?? null;
 
-  const [appData, setAppData] = useState<AppData>({
-    bookmarks:    [],
-    stickyNotes:  [],
-    todos:        [],
-    invitedUsers: [],
-    updatedAt:    new Date().toISOString(),
-  });
+  const { appData, isLoading, saveData, refreshData } = useAppData(sessionStatus !== "loading", userEmail);
 
   // Admin member-management modal
   const [showInviteModal, setShowInviteModal] = useState(false);
   const ADMIN_EMAIL = "chenricky@gmail.com";
   const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
 
-  const [loading, setLoading] = useState(true);
 
   // Layer visibility state
   const [showNotes, setShowNotes] = useState(true);
@@ -181,70 +175,6 @@ export default function Home() {
     heatmap: () => setShowHeatmapLayer((v) => !v),
   };
 
-  // Reload data whenever the session changes (login / logout)
-  useEffect(() => {
-    if (sessionStatus === "loading") return; // wait for session to resolve
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
-
-        if (!res.ok) {
-          console.error(`[page] /api/storage responded with HTTP ${res.status} — using empty defaults`);
-          setLoading(false);
-          return;
-        }
-
-        let raw: unknown;
-        try {
-          raw = await res.json();
-        } catch (parseErr) {
-          console.error("[page] Failed to parse /api/storage JSON response:", parseErr);
-          setLoading(false);
-          return;
-        }
-
-        // Validate the shape defensively — the API may return a partial/error object
-        const payload = raw as Record<string, unknown>;
-        if (payload.error) {
-          console.warn("[page] /api/storage returned an error field:", payload.error);
-        }
-
-        const safeData: AppData = {
-          bookmarks:    Array.isArray(payload.bookmarks)    ? (payload.bookmarks    as AppData["bookmarks"])    : [],
-          stickyNotes:  Array.isArray(payload.stickyNotes)  ? (payload.stickyNotes  as AppData["stickyNotes"])  : [],
-          todos:        Array.isArray(payload.todos)         ? (payload.todos         as AppData["todos"])        : [],
-          invitedUsers: Array.isArray(payload.invitedUsers) ? (payload.invitedUsers as AppData["invitedUsers"]) : [],
-          updatedAt:    typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
-        };
-
-        if (!Array.isArray(payload.bookmarks) || !Array.isArray(payload.stickyNotes) || !Array.isArray(payload.todos)) {
-          console.warn("[page] /api/storage response had unexpected shape — partial data applied:", payload);
-        }
-
-        setAppData(safeData);
-      } catch (error) {
-        console.error("[page] Failed to load data from /api/storage:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [sessionStatus, userEmail]);
-
-  // Save data
-  const saveData = useCallback(async (newData: AppData) => {
-    setAppData(newData);
-    try {
-      await fetch("/api/storage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newData),
-      });
-    } catch (error) {
-      console.error("Failed to save data:", error);
-    }
-  }, []);
 
   // Map click handler
   const handleMapClick = useCallback((lat: number, lng: number) => {
@@ -418,7 +348,7 @@ export default function Home() {
     setFlyToTarget({ bookmark: bm, key: flyToKeyRef.current });
   }, []);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -755,19 +685,9 @@ export default function Home() {
           note={editingNote}
           onSave={handleUpdateNote}
           onDelete={handleDeleteNote}
-          onClose={async () => {
+          onClose={() => {
             setEditingNote(null);
-            // Re-fetch fresh data so comments added via PATCH /api/notes
-            // are reflected in appData (fixes stale comment disappearing bug)
-            try {
-              const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
-              if (res.ok) {
-                const fresh: AppData = await res.json();
-                setAppData(fresh);
-              }
-            } catch {
-              // Silent — stale data is better than a crash
-            }
+            refreshData();
           }}
         />
       )}
@@ -777,20 +697,7 @@ export default function Home() {
         <InviteManagerModal
           invitedUsers={appData.invitedUsers}
           onClose={() => setShowInviteModal(false)}
-          onRefresh={async () => {
-            try {
-              const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
-              if (res.ok) {
-                const fresh = await res.json();
-                setAppData((prev) => ({
-                  ...prev,
-                  invitedUsers: Array.isArray(fresh.invitedUsers) ? fresh.invitedUsers : prev.invitedUsers,
-                }));
-              }
-            } catch {
-              // Silent — stale list is acceptable
-            }
-          }}
+          onRefresh={() => refreshData()}
         />
       )}
 
