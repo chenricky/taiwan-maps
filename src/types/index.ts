@@ -6,13 +6,33 @@ export interface Bookmark {
   createdAt: string;
 }
 
-export interface StickyNote {
-  id: string;
-  lat: number;
-  lng: number;
-  content: string;
-  color: string;
+// ── Sticky Note author / commenter identity ────────────────────────────────
+export interface NoteAuthor {
+  name:  string;
+  email: string;
+}
+
+// ── Individual comment inside a sticky note ────────────────────────────────
+export interface NoteComment {
+  id:        string;
+  text:      string;
   createdAt: string;
+  createdBy: NoteAuthor;
+}
+
+// ── Sticky Note (threaded post) ────────────────────────────────────────────
+export interface StickyNote {
+  id:        string;
+  lat:       number;
+  lng:       number;
+  /** The original post body (was `content` in v1 — kept as alias below) */
+  content:   string;
+  color:     string;
+  createdAt: string;
+  /** Optional — notes created before auth was added won't have this */
+  createdBy?: NoteAuthor;
+  /** Discussion thread — defaults to [] for older notes */
+  comments:  NoteComment[];
 }
 
 export interface TodoItem {
@@ -25,10 +45,10 @@ export interface TodoItem {
 }
 
 export interface AppData {
-  bookmarks: Bookmark[];
+  bookmarks:   Bookmark[];
   stickyNotes: StickyNote[];
-  todos: TodoItem[];
-  updatedAt: string;
+  todos:       TodoItem[];
+  updatedAt:   string;
 }
 
 export interface RoutePoint {

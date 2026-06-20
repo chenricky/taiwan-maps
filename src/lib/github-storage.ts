@@ -62,7 +62,11 @@ function toFlat(data: AppData): FlatStorageSchema {
 function fromFlat(flat: FlatStorageSchema): AppData {
   return {
     bookmarks:   flat.bookmarks ?? [],
-    stickyNotes: flat.notes     ?? [],
+    // Ensure every note has a `comments` array (backwards-compat with v1 notes)
+    stickyNotes: (flat.notes ?? []).map((n) => ({
+      ...n,
+      comments: Array.isArray(n.comments) ? n.comments : [],
+    })),
     todos:       flat.todos     ?? [],
     updatedAt:   new Date().toISOString(),
   };
@@ -219,4 +223,13 @@ export function clearCache(email?: string | null): void {
 export function clearAllCaches(): void {
   dataCache.clear();
   shaCache.clear();
+}
+
+/**
+ * Always fetches a fresh copy from GitHub (bypasses in-process cache).
+ * Use this before any write operation to prevent race conditions.
+ */
+export async function fetchFreshAppData(email?: string | null): Promise<AppData> {
+  clearCache(email);
+  return fetchAppData(email);
 }

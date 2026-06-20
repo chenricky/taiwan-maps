@@ -253,12 +253,16 @@ export default function Home() {
         content,
         color,
         createdAt: new Date().toISOString(),
+        createdBy: userEmail
+          ? { name: userName ?? userEmail, email: userEmail }
+          : undefined,
+        comments: [],
       };
       saveData({ ...appData, stickyNotes: [...appData.stickyNotes, newNote] });
       setShowNoteModal(false);
       setClickTarget(null);
     },
-    [clickTarget, appData, saveData]
+    [clickTarget, appData, saveData, userEmail, userName]
   );
 
   // Edit existing note (opened by clicking a note on the map)
