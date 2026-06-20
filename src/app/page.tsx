@@ -9,6 +9,7 @@ import RoutingPanel from "@/components/RoutingPanel";
 import BookmarksSidebar from "@/components/BookmarksSidebar";
 import BookmarkModal from "@/components/BookmarkModal";
 import StickyNoteModal from "@/components/StickyNoteModal";
+import StickyNoteEditModal from "@/components/StickyNoteEditModal";
 import TodoPanel from "@/components/TodoPanel";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -133,6 +134,9 @@ export default function Home() {
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
 
+  // Edit existing sticky note
+  const [editingNote, setEditingNote] = useState<StickyNote | null>(null);
+
   // Routing state
   const [routeStart, setRouteStart] = useState<RoutePoint | null>(null);
   const [routeEnd, setRouteEnd] = useState<RoutePoint | null>(null);
@@ -255,6 +259,35 @@ export default function Home() {
       setClickTarget(null);
     },
     [clickTarget, appData, saveData]
+  );
+
+  // Edit existing note (opened by clicking a note on the map)
+  const handleNoteClick = useCallback((note: StickyNote) => {
+    setEditingNote(note);
+  }, []);
+
+  const handleUpdateNote = useCallback(
+    (id: string, content: string, color: string) => {
+      saveData({
+        ...appData,
+        stickyNotes: appData.stickyNotes.map((n) =>
+          n.id === id ? { ...n, content, color } : n
+        ),
+      });
+      setEditingNote(null);
+    },
+    [appData, saveData]
+  );
+
+  const handleDeleteNote = useCallback(
+    (id: string) => {
+      saveData({
+        ...appData,
+        stickyNotes: appData.stickyNotes.filter((n) => n.id !== id),
+      });
+      setEditingNote(null);
+    },
+    [appData, saveData]
   );
 
   // Routing handler
@@ -445,6 +478,7 @@ export default function Home() {
             bookmarks={appData.bookmarks}
             stickyNotes={appData.stickyNotes}
             onMapClick={handleMapClick}
+            onNoteClick={handleNoteClick}
             routeStart={routeStart}
             routeEnd={routeEnd}
             routeCoords={routeCoords}
@@ -651,6 +685,16 @@ export default function Home() {
             setShowNoteModal(false);
             setClickTarget(null);
           }}
+        />
+      )}
+
+      {/* Edit existing sticky note — opened by clicking a note on the map */}
+      {editingNote && (
+        <StickyNoteEditModal
+          note={editingNote}
+          onSave={handleUpdateNote}
+          onDelete={handleDeleteNote}
+          onClose={() => setEditingNote(null)}
         />
       )}
 

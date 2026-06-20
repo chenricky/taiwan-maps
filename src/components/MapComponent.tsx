@@ -69,6 +69,7 @@ interface MapComponentProps {
   bookmarks: Bookmark[];
   stickyNotes: StickyNote[];
   onMapClick: (lat: number, lng: number) => void;
+  onNoteClick?: (note: StickyNote) => void;
   onBookmarkSelect?: (bookmark: Bookmark) => void;
   routeStart: RoutePoint | null;
   routeEnd: RoutePoint | null;
@@ -140,6 +141,7 @@ export default function MapComponent({
   bookmarks,
   stickyNotes,
   onMapClick,
+  onNoteClick,
   routeStart,
   routeEnd,
   routeCoords,
@@ -239,7 +241,7 @@ export default function MapComponent({
           </Marker>
         ))}
 
-        {/* Sticky Notes */}
+        {/* Sticky Notes — click opens edit/delete modal */}
         {showNotes &&
           stickyNotes.map((note) => (
             <Marker
@@ -247,10 +249,16 @@ export default function MapComponent({
               position={[note.lat, note.lng]}
               icon={L.divIcon({
                 className: "sticky-note-marker",
-                html: `<div style="background:${note.color};width:180px;padding:10px 8px;border-radius:2px;box-shadow:2px 3px 8px rgba(0,0,0,0.2);font-family:'Comic Sans MS','Segoe Print',cursive;font-size:13px;line-height:1.4;transform:rotate(-2deg);word-wrap:break-word;min-height:40px;">${note.content}</div>`,
+                html: `<div title="點擊編輯便利貼" style="cursor:pointer;background:${note.color};width:180px;padding:10px 8px 6px;border-radius:2px;box-shadow:2px 3px 8px rgba(0,0,0,0.2);font-family:'Comic Sans MS','Segoe Print',cursive;font-size:13px;line-height:1.4;transform:rotate(-2deg);word-wrap:break-word;min-height:40px;position:relative;">${note.content}<span style="position:absolute;bottom:3px;right:5px;font-size:10px;opacity:0.5;">✏️</span></div>`,
                 iconSize: [180, 50],
                 iconAnchor: [90, 25],
               })}
+              eventHandlers={{
+                click: (e) => {
+                  e.originalEvent?.stopPropagation();
+                  onNoteClick?.(note);
+                },
+              }}
             />
           ))}
 
