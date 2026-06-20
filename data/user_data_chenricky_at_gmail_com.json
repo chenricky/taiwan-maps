@@ -84,7 +84,7 @@
     {
       "id": "todo-1781985035383",
       "text": "df sdf s",
-      "completed": false,
+      "completed": true,
       "reminderDate": "2026-06-27T12:50",
       "reminderBookmarkId": null,
       "createdAt": "2026-06-20T19:50:35.383Z",
