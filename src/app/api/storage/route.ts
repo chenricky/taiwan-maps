@@ -9,11 +9,47 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const email   = session?.user?.email ?? null;
+    // ── 1. Resolve session ─────────────────────────────────────────────────
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (sessionErr) {
+      console.error("[API CRASH LOG]: getServerSession threw in GET /api/storage:", sessionErr);
+    }
+
+    const email = session?.user?.email ?? null;
     console.log(`[GET /api/storage] session=${email ?? "guest"}`);
-    const data    = await fetchAppData(email);
-    return NextResponse.json(data, {
+
+    // ── 2. Fetch data with its own guard ───────────────────────────────────
+    let data: AppData;
+    try {
+      data = await fetchAppData(email);
+    } catch (fetchErr) {
+      console.error("[API CRASH LOG]: fetchAppData threw in GET /api/storage:", fetchErr);
+      const def = getDefaultAppData();
+      return NextResponse.json(
+        { ...def, error: String(fetchErr) },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "Surrogate-Control": "no-store",
+          },
+        }
+      );
+    }
+
+    // ── 3. Validate shape before returning ────────────────────────────────
+    const safeData: AppData = {
+      bookmarks:   Array.isArray(data.bookmarks)   ? data.bookmarks   : [],
+      stickyNotes: Array.isArray(data.stickyNotes) ? data.stickyNotes : [],
+      todos:       Array.isArray(data.todos)        ? data.todos        : [],
+      updatedAt:   data.updatedAt ?? new Date().toISOString(),
+    };
+
+    return NextResponse.json(safeData, {
       headers: {
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
         "Pragma": "no-cache",
@@ -22,8 +58,12 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("[GET /api/storage] unexpected error:", error);
-    return NextResponse.json(getDefaultAppData());
+    console.error("[API CRASH LOG]: unhandled exception in GET /api/storage:", error);
+    const def = getDefaultAppData();
+    return NextResponse.json(
+      { bookmarks: def.bookmarks, todos: def.todos, stickyNotes: def.stickyNotes, notes: [], error: String(error) },
+      { status: 200 }
+    );
   }
 }
 

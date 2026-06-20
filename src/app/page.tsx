@@ -181,10 +181,42 @@ export default function Home() {
       setLoading(true);
       try {
         const res = await fetch(`/api/storage?t=${Date.now()}`, { cache: "no-store" });
-        const data: AppData = await res.json();
-        setAppData(data);
+
+        if (!res.ok) {
+          console.error(`[page] /api/storage responded with HTTP ${res.status} — using empty defaults`);
+          setLoading(false);
+          return;
+        }
+
+        let raw: unknown;
+        try {
+          raw = await res.json();
+        } catch (parseErr) {
+          console.error("[page] Failed to parse /api/storage JSON response:", parseErr);
+          setLoading(false);
+          return;
+        }
+
+        // Validate the shape defensively — the API may return a partial/error object
+        const payload = raw as Record<string, unknown>;
+        if (payload.error) {
+          console.warn("[page] /api/storage returned an error field:", payload.error);
+        }
+
+        const safeData: AppData = {
+          bookmarks:   Array.isArray(payload.bookmarks)   ? (payload.bookmarks   as AppData["bookmarks"])   : [],
+          stickyNotes: Array.isArray(payload.stickyNotes) ? (payload.stickyNotes as AppData["stickyNotes"]) : [],
+          todos:       Array.isArray(payload.todos)        ? (payload.todos        as AppData["todos"])        : [],
+          updatedAt:   typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
+        };
+
+        if (!Array.isArray(payload.bookmarks) || !Array.isArray(payload.stickyNotes) || !Array.isArray(payload.todos)) {
+          console.warn("[page] /api/storage response had unexpected shape — partial data applied:", payload);
+        }
+
+        setAppData(safeData);
       } catch (error) {
-        console.error("Failed to load data:", error);
+        console.error("[page] Failed to load data from /api/storage:", error);
       } finally {
         setLoading(false);
       }

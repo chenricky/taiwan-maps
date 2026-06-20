@@ -60,45 +60,134 @@ function toFlat(data: AppData): FlatStorageSchema {
 }
 
 function fromFlat(flat: FlatStorageSchema): AppData {
-  return {
-    bookmarks: (flat.bookmarks ?? []).map((b) => ({
-      id:        b.id        ?? `bm-legacy-${Math.random().toString(36).slice(2)}`,
-      lat:       b.lat       ?? 0,
-      lng:       b.lng       ?? 0,
-      label:     b.label     ?? "未命名書籤",
-      createdAt: b.createdAt ?? new Date().toISOString(),
-    })),
+  // ── Bookmarks ────────────────────────────────────────────────────────────
+  const bookmarks = (Array.isArray(flat.bookmarks) ? flat.bookmarks : []).map((b) => {
+    try {
+      // Defensive createdBy: always a valid object or undefined
+      const rawCB = (b as unknown as Record<string, unknown>)["createdBy"];
+      const cbObj = rawCB && typeof rawCB === "object" ? rawCB as Record<string, unknown> : null;
+      const safeCreatedBy = cbObj
+        ? { name: String(cbObj["name"] || "系統管理員"), email: String(cbObj["email"] || "system") }
+        : undefined;
 
-    // Ensure every note has `comments` and `createdBy` (backwards-compat with v1 notes)
-    stickyNotes: (flat.notes ?? []).map((n) => ({
-      id:        n.id        ?? `note-legacy-${Math.random().toString(36).slice(2)}`,
-      lat:       n.lat       ?? 0,
-      lng:       n.lng       ?? 0,
-      content:   n.content   ?? (n as unknown as Record<string, string>)["text"] ?? "",
-      color:     n.color     ?? "#fef68a",
-      createdAt: n.createdAt ?? new Date().toISOString(),
-      createdBy: n.createdBy ?? undefined,
-      comments:  Array.isArray(n.comments)
-        ? n.comments.map((c) => ({
-            id:        c.id        ?? `cmt-legacy-${Math.random().toString(36).slice(2)}`,
-            text:      c.text      ?? "",
-            createdAt: c.createdAt ?? new Date().toISOString(),
-            createdBy: c.createdBy ?? { name: "匿名", email: "unknown" },
-          }))
-        : [],
-    })),
+      return {
+        id:        typeof b.id === "string" && b.id        ? b.id        : `bm-legacy-${Math.random().toString(36).slice(2)}`,
+        lat:       typeof b.lat === "number"               ? b.lat       : 0,
+        lng:       typeof b.lng === "number"               ? b.lng       : 0,
+        label:     typeof b.label === "string" && b.label  ? b.label     : "未命名書籤",
+        createdAt: typeof b.createdAt === "string"         ? b.createdAt : new Date().toISOString(),
+        ...(safeCreatedBy ? { createdBy: safeCreatedBy } : {}),
+      };
+    } catch (bErr) {
+      console.error("[API CRASH LOG]: fromFlat bookmark parse error:", bErr, b);
+      return {
+        id:        `bm-err-${Math.random().toString(36).slice(2)}`,
+        lat:       0,
+        lng:       0,
+        label:     "未命名書籤",
+        createdAt: new Date().toISOString(),
+      };
+    }
+  });
 
-    todos: (flat.todos ?? []).map((t) => ({
-      id:                  t.id        ?? `todo-legacy-${Math.random().toString(36).slice(2)}`,
-      text:                t.text      ?? "",
-      completed:           t.completed ?? false,
-      reminderDate:        t.reminderDate        ?? null,
-      reminderBookmarkId:  t.reminderBookmarkId  ?? null,
-      createdAt:           t.createdAt ?? new Date().toISOString(),
-    })),
+  // ── Sticky Notes ─────────────────────────────────────────────────────────
+  const stickyNotes = (Array.isArray(flat.notes) ? flat.notes : []).map((n) => {
+    try {
+      // Defensive createdBy for the note itself
+      const rawCB = (n as unknown as Record<string, unknown>)["createdBy"];
+      const cbObj = rawCB && typeof rawCB === "object" ? rawCB as Record<string, unknown> : null;
+      const safeCreatedBy = cbObj
+        ? { name: String(cbObj["name"] || "系統管理員"), email: String(cbObj["email"] || "system") }
+        : undefined;
 
-    updatedAt: new Date().toISOString(),
-  };
+      // Defensive comments array
+      const rawComments = (n as unknown as Record<string, unknown>)["comments"];
+      const safeComments = Array.isArray(rawComments)
+        ? rawComments.map((c) => {
+            try {
+              const cObj = c && typeof c === "object" ? c as Record<string, unknown> : {};
+              const cCB  = cObj["createdBy"] && typeof cObj["createdBy"] === "object"
+                ? cObj["createdBy"] as Record<string, unknown>
+                : null;
+              return {
+                id:        typeof cObj["id"] === "string" && cObj["id"] ? String(cObj["id"]) : `cmt-legacy-${Math.random().toString(36).slice(2)}`,
+                text:      typeof cObj["text"] === "string"             ? String(cObj["text"])      : "",
+                createdAt: typeof cObj["createdAt"] === "string"        ? String(cObj["createdAt"]) : new Date().toISOString(),
+                createdBy: {
+                  name:  String(cCB?.["name"]  || "匿名"),
+                  email: String(cCB?.["email"] || "unknown"),
+                },
+              };
+            } catch (cErr) {
+              console.error("[API CRASH LOG]: fromFlat comment parse error:", cErr, c);
+              return {
+                id:        `cmt-err-${Math.random().toString(36).slice(2)}`,
+                text:      "",
+                createdAt: new Date().toISOString(),
+                createdBy: { name: "匿名", email: "unknown" },
+              };
+            }
+          })
+        : [];
+
+      const nAny = n as unknown as Record<string, unknown>;
+      return {
+        id:        typeof n.id === "string" && n.id        ? n.id        : `note-legacy-${Math.random().toString(36).slice(2)}`,
+        lat:       typeof n.lat === "number"               ? n.lat       : 0,
+        lng:       typeof n.lng === "number"               ? n.lng       : 0,
+        content:   typeof n.content === "string"           ? n.content   : (typeof nAny["text"] === "string" ? String(nAny["text"]) : ""),
+        color:     typeof n.color === "string" && n.color  ? n.color     : "#fef68a",
+        createdAt: typeof n.createdAt === "string"         ? n.createdAt : new Date().toISOString(),
+        comments:  safeComments,
+        ...(safeCreatedBy ? { createdBy: safeCreatedBy } : {}),
+      };
+    } catch (nErr) {
+      console.error("[API CRASH LOG]: fromFlat note parse error:", nErr, n);
+      return {
+        id:        `note-err-${Math.random().toString(36).slice(2)}`,
+        lat:       0,
+        lng:       0,
+        content:   "",
+        color:     "#fef68a",
+        createdAt: new Date().toISOString(),
+        comments:  [],
+      };
+    }
+  });
+
+  // ── Todos ────────────────────────────────────────────────────────────────
+  const todos = (Array.isArray(flat.todos) ? flat.todos : []).map((t) => {
+    try {
+      // Defensive createdBy for todos
+      const rawCB = (t as unknown as Record<string, unknown>)["createdBy"];
+      const cbObj = rawCB && typeof rawCB === "object" ? rawCB as Record<string, unknown> : null;
+      const safeCreatedBy = cbObj
+        ? { name: String(cbObj["name"] || "系統管理員"), email: String(cbObj["email"] || "system") }
+        : undefined;
+
+      return {
+        id:                 typeof t.id === "string" && t.id          ? t.id        : `todo-legacy-${Math.random().toString(36).slice(2)}`,
+        text:               typeof t.text === "string"                ? t.text      : "",
+        completed:          typeof t.completed === "boolean"          ? t.completed : false,
+        reminderDate:       t.reminderDate       != null              ? t.reminderDate       : null,
+        reminderBookmarkId: t.reminderBookmarkId != null              ? t.reminderBookmarkId : null,
+        createdAt:          typeof t.createdAt === "string"           ? t.createdAt : new Date().toISOString(),
+        ...(safeCreatedBy ? { createdBy: safeCreatedBy } : {}),
+      };
+    } catch (tErr) {
+      console.error("[API CRASH LOG]: fromFlat todo parse error:", tErr, t);
+      return {
+        id:                 `todo-err-${Math.random().toString(36).slice(2)}`,
+        text:               "",
+        completed:          false,
+        reminderDate:       null,
+        reminderBookmarkId: null,
+        createdAt:          new Date().toISOString(),
+      };
+    }
+  });
+
+  return { bookmarks, stickyNotes, todos, updatedAt: new Date().toISOString() };
 }
 
 // ── Per-user in-process cache ──────────────────────────────────────────────
@@ -153,11 +242,30 @@ export async function fetchAppData(email?: string | null): Promise<AppData> {
       throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
     }
 
-    const fileData = await res.json();
-    shaCache.set(filePath, fileData.sha);
+    let fileData: Record<string, unknown>;
+    try {
+      fileData = await res.json();
+    } catch (jsonErr) {
+      console.error("[API CRASH LOG]: GitHub API response was not valid JSON:", jsonErr);
+      const def = getDefaultAppData();
+      dataCache.set(filePath, def);
+      return def;
+    }
 
-    const raw  = Buffer.from(fileData.content, "base64").toString("utf-8");
-    const flat = JSON.parse(raw) as FlatStorageSchema;
+    if (typeof fileData.sha === "string") {
+      shaCache.set(filePath, fileData.sha);
+    }
+
+    let flat: FlatStorageSchema;
+    try {
+      const raw = Buffer.from(String(fileData.content ?? ""), "base64").toString("utf-8");
+      flat = JSON.parse(raw) as FlatStorageSchema;
+    } catch (parseErr) {
+      console.error("[API CRASH LOG]: Failed to decode/parse GitHub file content:", parseErr);
+      const def = getDefaultAppData();
+      dataCache.set(filePath, def);
+      return def;
+    }
 
     // Tolerate files saved with the old schema (had stickyNotes key)
     const flatAny = (flat as unknown) as Record<string, unknown>;
@@ -167,7 +275,16 @@ export async function fetchAppData(email?: string | null): Promise<AppData> {
       todos:     flat.todos     ?? [],
     };
 
-    const appData = fromFlat(normalised);
+    let appData: AppData;
+    try {
+      appData = fromFlat(normalised);
+    } catch (fromFlatErr) {
+      console.error("[API CRASH LOG]: fromFlat threw unexpectedly:", fromFlatErr);
+      const def = getDefaultAppData();
+      dataCache.set(filePath, def);
+      return def;
+    }
+
     dataCache.set(filePath, appData);
     return appData;
   } catch (error) {

@@ -169,12 +169,46 @@ export async function DELETE(request: Request) {
 // ── GET: return all notes (public) ─────────────────────────────────────────
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const email   = session?.user?.email ?? null;
-    const data    = await fetchFreshAppData(email);
-    return NextResponse.json(data.stickyNotes);
+    // ── 1. Resolve session defensively ────────────────────────────────────
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (sessionErr) {
+      console.error("[API CRASH LOG]: getServerSession threw in GET /api/notes:", sessionErr);
+    }
+
+    const email = session?.user?.email ?? null;
+    console.log(`[GET /api/notes] session=${email ?? "guest"}`);
+
+    // ── 2. Fetch fresh data with its own guard ────────────────────────────
+    let data;
+    try {
+      data = await fetchFreshAppData(email);
+    } catch (fetchErr) {
+      console.error("[API CRASH LOG]: fetchFreshAppData threw in GET /api/notes:", fetchErr);
+      return NextResponse.json(
+        { notes: [], error: String(fetchErr) },
+        { status: 200 }
+      );
+    }
+
+    // ── 3. Validate shape before returning ────────────────────────────────
+    const safeNotes = Array.isArray(data.stickyNotes)
+      ? data.stickyNotes.map((n) => ({
+          ...n,
+          comments: Array.isArray(n.comments) ? n.comments : [],
+          createdBy: n.createdBy
+            ? { name: n.createdBy.name || "系統管理員", email: n.createdBy.email || "system" }
+            : undefined,
+        }))
+      : [];
+
+    return NextResponse.json(safeNotes);
   } catch (error) {
-    console.error("[GET /api/notes]", error);
-    return NextResponse.json(getDefaultAppData().stickyNotes);
+    console.error("[API CRASH LOG]: unhandled exception in GET /api/notes:", error);
+    return NextResponse.json(
+      { notes: [], error: String(error) },
+      { status: 200 }
+    );
   }
 }
