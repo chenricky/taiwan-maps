@@ -20,26 +20,20 @@
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       },
-      "comments": [
-        {
-          "id": "cmt-1781984165711-625m3",
-          "text": "sd asd d WD",
-          "createdAt": "2026-06-20T19:36:05.711Z",
-          "createdBy": {
-            "name": "Ricky Chen",
-            "email": "chenricky@gmail.com"
-          }
-        },
-        {
-          "id": "cmt-1781984168153-xadhs",
-          "text": "AD ad",
-          "createdAt": "2026-06-20T19:36:08.153Z",
-          "createdBy": {
-            "name": "Ricky Chen",
-            "email": "chenricky@gmail.com"
-          }
-        }
-      ]
+      "comments": []
+    },
+    {
+      "id": "note-1781984222757",
+      "lat": 25.102195874408924,
+      "lng": 121.52316716967402,
+      "content": "D ds",
+      "color": "#fef68a",
+      "createdAt": "2026-06-20T19:37:02.757Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      },
+      "comments": []
     }
   ],
   "todos": [
@@ -49,7 +43,11 @@
       "completed": false,
       "reminderDate": "2026-06-25T12:35",
       "reminderBookmarkId": null,
-      "createdAt": "2026-06-20T19:35:42.500Z"
+      "createdAt": "2026-06-20T19:35:42.500Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ]
 }
