@@ -1,7 +1,12 @@
 /**
- * GitHub Contents API storage backend.
+ * GitHub Contents API storage backend — multi-user edition.
  *
- * Flat on-disk schema (data/user_data.json in the repo):
+ * Each logged-in user gets their own file in the repo:
+ *   data/user_data_<sanitised_email>.json
+ *
+ * Guests (no session) fall back to the global default (read-only).
+ *
+ * Flat on-disk schema:
  *   { "bookmarks": [], "notes": [], "todos": [] }
  *
  * The in-memory AppData type uses `stickyNotes` for notes; we translate
@@ -10,13 +15,34 @@
 
 import { AppData, Bookmark, StickyNote, TodoItem } from "@/types";
 
-const GITHUB_TOKEN  = process.env.GITHUB_TOKEN  || "";
-const REPO_OWNER    = process.env.GITHUB_USERNAME || process.env.REPO_OWNER || "";
-const REPO_NAME     = process.env.GITHUB_REPO    || process.env.REPO_NAME  || "";
-const FILE_PATH     = "data/user_data.json";
-const BRANCH        = "main";
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN  || "";
+const REPO_OWNER   = process.env.GITHUB_USERNAME || process.env.REPO_OWNER || "";
+const REPO_NAME    = process.env.GITHUB_REPO    || process.env.REPO_NAME  || "";
+const BRANCH       = "main";
 
-const GITHUB_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+// ── Email → safe filename ──────────────────────────────────────────────────
+/**
+ * Converts an email address into a safe filename segment.
+ * e.g. "ricky@gmail.com" → "ricky_at_gmail_com"
+ */
+export function emailToFilename(email: string): string {
+  return email
+    .toLowerCase()
+    .replace(/@/g, "_at_")
+    .replace(/\./g, "_")
+    .replace(/[^a-z0-9_]/g, "_");
+}
+
+export function getFilePath(email?: string | null): string {
+  if (email) {
+    return `data/user_data_${emailToFilename(email)}.json`;
+  }
+  return "data/user_data.json";
+}
+
+function githubApiUrl(filePath: string): string {
+  return `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filePath}`;
+}
 
 // ── Flat on-disk schema ────────────────────────────────────────────────────
 interface FlatStorageSchema {
@@ -27,7 +53,7 @@ interface FlatStorageSchema {
 
 function toFlat(data: AppData): FlatStorageSchema {
   return {
-    bookmarks: data.bookmarks  ?? [],
+    bookmarks: data.bookmarks   ?? [],
     notes:     data.stickyNotes ?? [],
     todos:     data.todos       ?? [],
   };
@@ -42,9 +68,10 @@ function fromFlat(flat: FlatStorageSchema): AppData {
   };
 }
 
-// ── In-process cache ───────────────────────────────────────────────────────
-let cachedData: AppData | null = null;
-let cachedSha:  string | null  = null;
+// ── Per-user in-process cache ──────────────────────────────────────────────
+// Key: filePath (includes the user-specific segment)
+const dataCache = new Map<string, AppData>();
+const shaCache  = new Map<string, string>();
 
 export function getDefaultAppData(): AppData {
   return {
@@ -56,17 +83,21 @@ export function getDefaultAppData(): AppData {
 }
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
-export async function fetchAppData(): Promise<AppData> {
-  if (cachedData) return cachedData;
+export async function fetchAppData(email?: string | null): Promise<AppData> {
+  const filePath = getFilePath(email);
+
+  const cached = dataCache.get(filePath);
+  if (cached) return cached;
 
   if (!GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
     console.warn("[github-storage] credentials not configured – using in-memory defaults");
-    cachedData = getDefaultAppData();
-    return cachedData;
+    const def = getDefaultAppData();
+    dataCache.set(filePath, def);
+    return def;
   }
 
   try {
-    const res = await fetch(GITHUB_API, {
+    const res = await fetch(githubApiUrl(filePath), {
       headers: {
         Authorization: `Bearer ${GITHUB_TOKEN}`,
         Accept: "application/vnd.github.v3+json",
@@ -76,8 +107,9 @@ export async function fetchAppData(): Promise<AppData> {
 
     if (res.status === 404) {
       // File doesn't exist yet – return defaults (will be created on first save)
-      cachedData = getDefaultAppData();
-      return cachedData;
+      const def = getDefaultAppData();
+      dataCache.set(filePath, def);
+      return def;
     }
 
     if (!res.ok) {
@@ -85,46 +117,53 @@ export async function fetchAppData(): Promise<AppData> {
     }
 
     const fileData = await res.json();
-    cachedSha = fileData.sha;
+    shaCache.set(filePath, fileData.sha);
 
     const raw  = Buffer.from(fileData.content, "base64").toString("utf-8");
     const flat = JSON.parse(raw) as FlatStorageSchema;
 
-    // Tolerate files that were saved with the old schema (had stickyNotes key)
+    // Tolerate files saved with the old schema (had stickyNotes key)
+    const flatAny = (flat as unknown) as Record<string, unknown>;
     const normalised: FlatStorageSchema = {
-      bookmarks: flat.bookmarks ?? (flat as any).bookmarks ?? [],
-      notes:     flat.notes     ?? (flat as any).stickyNotes ?? [],
+      bookmarks: flat.bookmarks ?? (flatAny["bookmarks"] as Bookmark[])    ?? [],
+      notes:     flat.notes     ?? (flatAny["stickyNotes"] as StickyNote[]) ?? [],
       todos:     flat.todos     ?? [],
     };
 
-    cachedData = fromFlat(normalised);
-    return cachedData;
+    const appData = fromFlat(normalised);
+    dataCache.set(filePath, appData);
+    return appData;
   } catch (error) {
     console.error("[github-storage] fetchAppData failed:", error);
-    cachedData = getDefaultAppData();
-    return cachedData;
+    const def = getDefaultAppData();
+    dataCache.set(filePath, def);
+    return def;
   }
 }
 
 // ── Save ───────────────────────────────────────────────────────────────────
-export async function saveAppData(data: AppData): Promise<boolean> {
+export async function saveAppData(data: AppData, email?: string | null): Promise<boolean> {
+  const filePath = getFilePath(email);
+
   if (!GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
     console.warn("[github-storage] credentials not configured – in-memory save only");
-    cachedData = data;
+    dataCache.set(filePath, data);
     return true;
   }
 
   // Update cache immediately so subsequent reads are consistent
-  cachedData = { ...data, updatedAt: new Date().toISOString() };
+  const updated = { ...data, updatedAt: new Date().toISOString() };
+  dataCache.set(filePath, updated);
 
   // Serialise using the flat schema
-  const flat    = toFlat(cachedData);
+  const flat    = toFlat(updated);
   const content = Buffer.from(JSON.stringify(flat, null, 2)).toString("base64");
+  const apiUrl  = githubApiUrl(filePath);
 
   try {
     // Refresh SHA if we don't have it
-    if (!cachedSha) {
-      const headRes = await fetch(GITHUB_API, {
+    if (!shaCache.has(filePath)) {
+      const headRes = await fetch(apiUrl, {
         headers: {
           Authorization: `Bearer ${GITHUB_TOKEN}`,
           Accept: "application/vnd.github.v3+json",
@@ -133,18 +172,19 @@ export async function saveAppData(data: AppData): Promise<boolean> {
       });
       if (headRes.ok) {
         const headData = await headRes.json();
-        cachedSha = headData.sha;
+        shaCache.set(filePath, headData.sha);
       }
     }
 
     const body: Record<string, unknown> = {
-      message: "chore: update taiwan-maps user data",
+      message: `chore: update user data${email ? ` for ${emailToFilename(email)}` : ""}`,
       content,
       branch: BRANCH,
     };
-    if (cachedSha) body.sha = cachedSha;
+    const sha = shaCache.get(filePath);
+    if (sha) body.sha = sha;
 
-    const putRes = await fetch(GITHUB_API, {
+    const putRes = await fetch(apiUrl, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${GITHUB_TOKEN}`,
@@ -160,7 +200,8 @@ export async function saveAppData(data: AppData): Promise<boolean> {
     }
 
     const result = await putRes.json();
-    cachedSha = result.content?.sha ?? null;
+    const newSha = result.content?.sha;
+    if (newSha) shaCache.set(filePath, newSha);
     return true;
   } catch (error) {
     console.error("[github-storage] saveAppData failed:", error);
@@ -169,7 +210,13 @@ export async function saveAppData(data: AppData): Promise<boolean> {
 }
 
 // ── Cache helpers ──────────────────────────────────────────────────────────
-export function clearCache(): void {
-  cachedData = null;
-  cachedSha  = null;
+export function clearCache(email?: string | null): void {
+  const filePath = getFilePath(email);
+  dataCache.delete(filePath);
+  shaCache.delete(filePath);
+}
+
+export function clearAllCaches(): void {
+  dataCache.clear();
+  shaCache.clear();
 }

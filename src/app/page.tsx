@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { AppData, Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
 import SearchBar from "@/components/SearchBar";
 import RoutingPanel from "@/components/RoutingPanel";
@@ -97,6 +98,11 @@ const LAYER_TOGGLES: LayerToggle[] = [
 ];
 
 export default function Home() {
+  // ── Auth session ───────────────────────────────────────────────────────────
+  const { data: session, status: sessionStatus } = useSession();
+  const userEmail = session?.user?.email ?? null;
+  const userName  = session?.user?.name  ?? null;
+
   const [appData, setAppData] = useState<AppData>({
     bookmarks: [],
     stickyNotes: [],
@@ -164,9 +170,11 @@ export default function Home() {
     heatmap: () => setShowHeatmapLayer((v) => !v),
   };
 
-  // Load data
+  // Reload data whenever the session changes (login / logout)
   useEffect(() => {
+    if (sessionStatus === "loading") return; // wait for session to resolve
     const loadData = async () => {
+      setLoading(true);
       try {
         const res = await fetch("/api/storage");
         const data: AppData = await res.json();
@@ -178,7 +186,7 @@ export default function Home() {
       }
     };
     loadData();
-  }, []);
+  }, [sessionStatus, userEmail]);
 
   // Save data
   const saveData = useCallback(async (newData: AppData) => {
@@ -341,7 +349,7 @@ export default function Home() {
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
 
-      {/* ── Header: logo + search only (no layer toggles here) ─────────────── */}
+      {/* ── Header: logo + search + auth ────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-200 px-3 py-2 flex items-center gap-3 z-50 shrink-0">
         <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
           <span>🗺️</span>
@@ -349,6 +357,40 @@ export default function Home() {
         </h1>
         <div className="flex-1 min-w-0">
           <SearchBar onSearchResult={setSearchResult} />
+        </div>
+
+        {/* ── Auth: welcome badge + login/logout button ── */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Welcome badge — shown when logged in */}
+          {session?.user && (
+            <span className="hidden sm:inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+              <span>👤</span>
+              <span>{userName ?? userEmail} 您好</span>
+            </span>
+          )}
+
+          {/* Login / Logout toggle button — min-h-[44px] for senior touch target */}
+          {sessionStatus !== "loading" && (
+            session
+              ? (
+                <button
+                  onClick={() => signOut()}
+                  className="min-h-[44px] px-3 py-1.5 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-semibold transition-colors whitespace-nowrap"
+                  title="登出 Google 帳號"
+                >
+                  登出
+                </button>
+              )
+              : (
+                <button
+                  onClick={() => signIn("google")}
+                  className="min-h-[44px] px-3 py-1.5 rounded-lg border border-blue-400 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors whitespace-nowrap shadow-sm"
+                  title="使用 Google 帳號登入，儲存個人書籤與待辦事項"
+                >
+                  登入
+                </button>
+              )
+          )}
         </div>
       </header>
 
