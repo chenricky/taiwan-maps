@@ -13,6 +13,7 @@ import StickyNoteEditModal from "@/components/StickyNoteEditModal";
 import TodoPanel from "@/components/TodoPanel";
 import InviteManagerModal from "@/components/InviteManagerModal";
 import StickyNotesSidebar from "@/components/StickyNotesSidebar";
+import MobileBottomSheet from "@/components/MobileBottomSheet";
 import { useAppData } from "@/hooks/useAppData";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -128,6 +129,8 @@ export default function Home() {
   // Panel collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  // Mobile auth FAB dropdown
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Floating layer panel open/close (mobile: starts closed; desktop: starts open)
   const [layerPanelOpen, setLayerPanelOpen] = useState(true);
 
@@ -386,7 +389,7 @@ export default function Home() {
 
         {/* ── Auth: welcome badge + login/logout button ── */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Welcome badge — shown when logged in */}
+          {/* Welcome badge — desktop only */}
           {session?.user && (
             <span className="hidden sm:inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
               <span>👤</span>
@@ -394,24 +397,24 @@ export default function Home() {
             </span>
           )}
 
-          {/* ⚙️ Admin member-management button — only visible to admin */}
+          {/* ⚙️ Admin button — desktop only */}
           {isAdmin && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="min-h-[44px] px-3 py-1.5 rounded-lg border border-purple-300 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 text-sm font-semibold transition-colors whitespace-nowrap"
+              className="hidden md:inline-flex min-h-[44px] px-3 py-1.5 rounded-lg border border-purple-300 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 text-sm font-semibold transition-colors whitespace-nowrap"
               title="管理成員白名單"
             >
               ⚙️ 成員管理
             </button>
           )}
 
-          {/* Login / Logout toggle button — min-h-[44px] for senior touch target */}
+          {/* Login / Logout — desktop only */}
           {sessionStatus !== "loading" && (
             session
               ? (
                 <button
                   onClick={() => signOut()}
-                  className="min-h-[44px] px-3 py-1.5 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-semibold transition-colors whitespace-nowrap"
+                  className="hidden md:inline-flex min-h-[44px] px-3 py-1.5 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-semibold transition-colors whitespace-nowrap"
                   title="登出 Google 帳號"
                 >
                   登出
@@ -420,13 +423,71 @@ export default function Home() {
               : (
                 <button
                   onClick={() => signIn("google")}
-                  className="min-h-[44px] px-3 py-1.5 rounded-lg border border-blue-400 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors whitespace-nowrap shadow-sm"
-                  title="使用 Google 帳號登入，儲存個人書籤與待辦事項"
+                  className="hidden md:inline-flex min-h-[44px] px-3 py-1.5 rounded-lg border border-blue-400 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors whitespace-nowrap shadow-sm"
+                  title="使用 Google 帳號登入"
                 >
                   登入
                 </button>
               )
           )}
+
+          {/* ── Mobile: compact auth FAB + dropdown (hidden on desktop) ── */}
+          <div className="relative md:hidden">
+            <button
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm flex items-center justify-center shadow-md transition-colors"
+              aria-label="選單"
+              aria-expanded={mobileMenuOpen}
+            >
+              {session?.user
+                ? (userName ?? userEmail ?? "?")[0]?.toUpperCase()
+                : <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+              }
+            </button>
+
+            {mobileMenuOpen && (
+              <>
+                {/* Tap-away dismiss layer */}
+                <div
+                  className="fixed inset-0 z-[3000]"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                {/* Dropdown menu */}
+                <div className="absolute top-full right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-[3001]">
+                  {session?.user && (
+                    <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 truncate font-medium">
+                      {userName ?? userEmail}
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => { setShowInviteModal(true); setMobileMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2.5 text-sm text-purple-700 font-semibold hover:bg-purple-50 active:bg-purple-100 flex items-center gap-2 transition-colors"
+                    >
+                      <span>⚙️</span><span>成員管理</span>
+                    </button>
+                  )}
+                  {sessionStatus !== "loading" && (
+                    session ? (
+                      <button
+                        onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                        className="w-full text-left px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-2 transition-colors"
+                      >
+                        <span>👋</span><span>登出</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { signIn("google"); setMobileMenuOpen(false); }}
+                        className="w-full text-left px-3 py-2.5 text-sm text-blue-700 font-semibold hover:bg-blue-50 active:bg-blue-100 flex items-center gap-2 transition-colors"
+                      >
+                        <span>🔑</span><span>Google 登入</span>
+                      </button>
+                    )
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -435,7 +496,7 @@ export default function Home() {
 
         {/* Left sidebar (desktop) */}
         <div
-          className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shrink-0 overflow-hidden ${
+          className={`hidden md:flex md:flex-col bg-white border-r border-gray-200 transition-all duration-300 shrink-0 overflow-hidden ${
             sidebarCollapsed ? "w-0 border-r-0" : "w-64 md:w-72"
           }`}
         >
@@ -462,7 +523,7 @@ export default function Home() {
         {/* Sidebar toggle (left) */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="bg-white border-r border-gray-200 px-1 hover:bg-gray-50 flex items-center z-10 shrink-0"
+          className="hidden md:flex bg-white border-r border-gray-200 px-1 hover:bg-gray-50 items-center z-10 shrink-0"
           title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
         >
           <svg
@@ -568,7 +629,7 @@ export default function Home() {
           </div>
 
           {/* ── MOBILE panel: bottom sheet, 2-col grid ── */}
-          <div className="md:hidden absolute bottom-4 left-4 right-4 z-[1000] pointer-events-none">
+          <div className="md:hidden absolute bottom-16 left-4 right-4 z-[1000] pointer-events-none">
             <div className="pointer-events-auto bg-white/97 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
               {/* Mobile panel header */}
               <button
@@ -635,7 +696,7 @@ export default function Home() {
         {/* Right panel toggle */}
         <button
           onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-          className="bg-white border-l border-gray-200 px-1 hover:bg-gray-50 flex items-center z-10 shrink-0"
+          className="hidden md:flex bg-white border-l border-gray-200 px-1 hover:bg-gray-50 items-center z-10 shrink-0"
           title={rightPanelCollapsed ? "顯示便利貼清單" : "隱藏便利貼清單"}
         >
           <svg
@@ -650,7 +711,7 @@ export default function Home() {
 
         {/* Right sticky-notes panel */}
         <div
-          className={`bg-white border-l border-gray-200 transition-all duration-300 flex flex-col shrink-0 overflow-hidden ${
+          className={`hidden md:flex md:flex-col bg-white border-l border-gray-200 transition-all duration-300 shrink-0 overflow-hidden ${
             rightPanelCollapsed ? "w-0 border-l-0" : "w-64 md:w-72"
           }`}
         >
@@ -723,8 +784,16 @@ export default function Home() {
         />
       )}
 
+      {/* ── Mobile: bottom-sheet drawer (hidden on desktop) ── */}
+      <MobileBottomSheet
+        notes={appData.stickyNotes}
+        bookmarks={appData.bookmarks}
+        onSelectNote={handleSelectNote}
+        onSelectBookmark={handleSelectBookmark}
+      />
+
       {/* ── Status bar ──────────────────────────────────────────────────────── */}
-      <footer className="bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex items-center justify-between shrink-0">
+      <footer className="hidden md:flex bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 items-center justify-between shrink-0">
         <span className="truncate">
           📌 {appData.bookmarks.length} &nbsp;|&nbsp;
           📝 {appData.stickyNotes.length} &nbsp;|&nbsp;
