@@ -12,6 +12,7 @@ import StickyNoteModal from "@/components/StickyNoteModal";
 import StickyNoteEditModal from "@/components/StickyNoteEditModal";
 import TodoPanel from "@/components/TodoPanel";
 import InviteManagerModal from "@/components/InviteManagerModal";
+import StickyNotesSidebar from "@/components/StickyNotesSidebar";
 import { useAppData } from "@/hooks/useAppData";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
@@ -148,9 +149,13 @@ export default function Home() {
   // Search result
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
 
-  // Fly-to target
+  // Fly-to target (bookmarks)
   const flyToKeyRef = useRef(0);
   const [flyToTarget, setFlyToTarget] = useState<{ bookmark: Bookmark; key: number } | null>(null);
+
+  // Fly-to target (sticky notes)
+  const flyToNoteKeyRef = useRef(0);
+  const [flyToNoteTarget, setFlyToNoteTarget] = useState<{ lat: number; lng: number; key: number } | null>(null);
 
   // Layer active map
   const layerActive: Record<string, boolean> = {
@@ -348,6 +353,13 @@ export default function Home() {
     setFlyToTarget({ bookmark: bm, key: flyToKeyRef.current });
   }, []);
 
+  const handleSelectNote = useCallback((note: StickyNote) => {
+    flyToNoteKeyRef.current += 1;
+    setFlyToNoteTarget({ lat: note.lat, lng: note.lng, key: flyToNoteKeyRef.current });
+    setShowNotes(true);   // ensure the notes layer is visible before flying to it
+    setEditingNote(note); // open the note's edit/read modal on arrival
+  }, []);
+
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
@@ -483,6 +495,7 @@ export default function Home() {
             showHeatmapLayer={showHeatmapLayer}
             searchResult={searchResult}
             flyToTarget={flyToTarget}
+            flyToNoteTarget={flyToNoteTarget}
           />
 
           {/* ── Floating Layer Control Panel ──────────────────────────────── */}
@@ -623,7 +636,7 @@ export default function Home() {
         <button
           onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
           className="bg-white border-l border-gray-200 px-1 hover:bg-gray-50 flex items-center z-10 shrink-0"
-          title={rightPanelCollapsed ? "Show todos" : "Hide todos"}
+          title={rightPanelCollapsed ? "顯示便利貼清單" : "隱藏便利貼清單"}
         >
           <svg
             className={`w-4 h-4 text-gray-500 transition-transform ${rightPanelCollapsed ? "rotate-180" : ""}`}
@@ -635,13 +648,22 @@ export default function Home() {
           </svg>
         </button>
 
-        {/* Right todo panel */}
+        {/* Right sticky-notes panel */}
         <div
           className={`bg-white border-l border-gray-200 transition-all duration-300 flex flex-col shrink-0 overflow-hidden ${
             rightPanelCollapsed ? "w-0 border-l-0" : "w-64 md:w-72"
           }`}
         >
-          <div className="p-3 overflow-y-auto flex-1">
+          {/* StickyNotesSidebar fills the full panel height */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <StickyNotesSidebar
+              notes={appData.stickyNotes}
+              onSelectNote={handleSelectNote}
+            />
+          </div>
+
+          {/* TodoPanel — hidden from UI, all data + handlers fully preserved */}
+          <div className="hidden">
             <TodoPanel
               todos={appData.todos}
               bookmarks={appData.bookmarks}

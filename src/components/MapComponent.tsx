@@ -65,6 +65,12 @@ const routeIcons = {
   }),
 };
 
+interface NoteTarget {
+  lat: number;
+  lng: number;
+  key: number;
+}
+
 interface MapComponentProps {
   bookmarks: Bookmark[];
   stickyNotes: StickyNote[];
@@ -84,6 +90,7 @@ interface MapComponentProps {
   showHeatmapLayer: boolean;
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
+  flyToNoteTarget?: NoteTarget | null;
 }
 
 function MapController({
@@ -91,11 +98,13 @@ function MapController({
   routeStart,
   routeEnd,
   flyToTarget,
+  flyToNoteTarget,
 }: {
   searchResult: SearchResult | null;
   routeStart: RoutePoint | null;
   routeEnd: RoutePoint | null;
   flyToTarget?: FlyToTarget | null;
+  flyToNoteTarget?: NoteTarget | null;
 }) {
   const map = useMap();
 
@@ -120,6 +129,12 @@ function MapController({
       map.flyTo([flyToTarget.bookmark.lat, flyToTarget.bookmark.lng], 14);
     }
   }, [flyToTarget, map]);
+
+  useEffect(() => {
+    if (flyToNoteTarget) {
+      map.flyTo([flyToNoteTarget.lat, flyToNoteTarget.lng], 16);
+    }
+  }, [flyToNoteTarget, map]);
 
   return null;
 }
@@ -155,6 +170,7 @@ export default function MapComponent({
   showHeatmapLayer,
   searchResult,
   flyToTarget,
+  flyToNoteTarget,
 }: MapComponentProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
@@ -197,6 +213,7 @@ export default function MapComponent({
           routeStart={routeStart}
           routeEnd={routeEnd}
           flyToTarget={flyToTarget}
+          flyToNoteTarget={flyToNoteTarget}
         />
 
         <ClickHandler onMapClick={onMapClick} />
