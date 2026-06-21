@@ -367,7 +367,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
+      <div className="h-[100dvh] w-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
           <div className="text-gray-600 font-medium">Loading Taiwan Maps...</div>
@@ -377,7 +377,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
+    <div className="h-[100dvh] w-screen flex flex-col overflow-hidden bg-gray-50">
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
       <header className="px-4 py-2 flex items-center gap-3 z-50 shrink-0 bg-white/80 backdrop-blur-md border-b border-white/40 shadow-md md:bg-white md:border-gray-200 md:shadow-none md:px-3">
@@ -630,8 +630,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ── MOBILE panel: bottom sheet, 2-col grid ── */}
-          <div className={`${sheetExpanded ? "hidden" : "md:hidden"} absolute bottom-16 left-4 right-4 z-[1000] pointer-events-none`}>
+          {/* ── MOBILE layer panel — replaced by the 圖層 tab inside MobileBottomSheet ── */}
+          <div className="hidden absolute bottom-16 left-4 right-4 z-[1000] pointer-events-none">
             <div className="pointer-events-auto bg-white/97 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
               {/* Mobile panel header */}
               <button
@@ -790,6 +790,11 @@ export default function Home() {
       <MobileBottomSheet
         notes={appData.stickyNotes}
         bookmarks={appData.bookmarks}
+        layers={LAYER_TOGGLES.map(l => ({
+          ...l,
+          active:   layerActive[l.key],
+          onToggle: layerToggleHandlers[l.key],
+        }))}
         onSelectNote={handleSelectNote}
         onSelectBookmark={handleSelectBookmark}
         expanded={sheetExpanded}
