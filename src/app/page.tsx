@@ -380,7 +380,10 @@ export default function Home() {
     <div className="h-[100dvh] w-screen flex flex-col overflow-hidden bg-gray-50">
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
-      <header className="px-4 py-2 flex items-center gap-3 z-50 shrink-0 bg-white/80 backdrop-blur-md border-b border-white/40 shadow-md md:bg-white md:border-gray-200 md:shadow-none md:px-3">
+      <header
+        className="px-4 py-2 flex items-center gap-3 z-50 shrink-0 bg-white/80 backdrop-blur-md border-b border-white/40 shadow-md md:bg-white md:border-gray-200 md:shadow-none md:px-3"
+        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      >
         <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
           <span>🗺️</span>
           <span className="hidden sm:inline">Taiwan Maps</span>
