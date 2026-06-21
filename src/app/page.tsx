@@ -131,6 +131,8 @@ export default function Home() {
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   // Mobile auth FAB dropdown
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Bottom sheet expanded state — lifted here so the layer panel can react
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   // Floating layer panel open/close (mobile: starts closed; desktop: starts open)
   const [layerPanelOpen, setLayerPanelOpen] = useState(true);
 
@@ -378,7 +380,7 @@ export default function Home() {
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
-      <header className="bg-white border-b border-gray-200 px-3 py-2 flex items-center gap-3 z-50 shrink-0">
+      <header className="px-4 py-2 flex items-center gap-3 z-50 shrink-0 bg-white/80 backdrop-blur-md border-b border-white/40 shadow-md md:bg-white md:border-gray-200 md:shadow-none md:px-3">
         <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
           <span>🗺️</span>
           <span className="hidden sm:inline">Taiwan Maps</span>
@@ -629,7 +631,7 @@ export default function Home() {
           </div>
 
           {/* ── MOBILE panel: bottom sheet, 2-col grid ── */}
-          <div className="md:hidden absolute bottom-16 left-4 right-4 z-[1000] pointer-events-none">
+          <div className={`${sheetExpanded ? "hidden" : "md:hidden"} absolute bottom-16 left-4 right-4 z-[1000] pointer-events-none`}>
             <div className="pointer-events-auto bg-white/97 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
               {/* Mobile panel header */}
               <button
@@ -790,6 +792,8 @@ export default function Home() {
         bookmarks={appData.bookmarks}
         onSelectNote={handleSelectNote}
         onSelectBookmark={handleSelectBookmark}
+        expanded={sheetExpanded}
+        onExpandedChange={setSheetExpanded}
       />
 
       {/* ── Status bar ──────────────────────────────────────────────────────── */}
