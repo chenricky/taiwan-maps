@@ -367,7 +367,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="h-[100dvh] w-screen flex items-center justify-center bg-gray-50" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+      <div className="h-[100dvh] w-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
           <div className="text-gray-600 font-medium">Loading Taiwan Maps...</div>
@@ -377,10 +377,7 @@ export default function Home() {
   }
 
   return (
-    <div
-      className="h-[100dvh] w-screen flex flex-col overflow-hidden bg-gray-50"
-      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-    >
+    <div className="h-[100dvh] w-screen flex flex-col overflow-hidden bg-gray-50">
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
       <header className="px-4 py-2 flex items-center gap-3 z-50 shrink-0 bg-white/80 backdrop-blur-md border-b border-white/40 shadow-md md:bg-white md:border-gray-200 md:shadow-none md:px-3">
