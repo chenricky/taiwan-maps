@@ -177,6 +177,17 @@ export default function MapComponent({
   );
   const mapRef = useRef<L.Map | null>(null);
 
+  // When the iOS URL bar collapses the viewport expands and Leaflet's tile grid
+  // becomes misaligned. Calling invalidateSize() forces Leaflet to recompute
+  // its internal dimensions and re-render tiles to fill the new geometry.
+  useEffect(() => {
+    const onResize = () => {
+      setTimeout(() => mapRef.current?.invalidateSize(), 100);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const handleLocateMe = useCallback(() => {
     if (typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(

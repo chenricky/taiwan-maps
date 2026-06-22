@@ -137,7 +137,7 @@ export default function MobileBottomSheet({
           height: SHEET_VH,
           transform: expanded
             ? "translateY(0)"
-            : `translateY(calc(${SHEET_VH} - ${HANDLE_PX}px - env(safe-area-inset-bottom, 0px)))`,
+            : `translateY(calc(${SHEET_VH} - ${HANDLE_PX}px - env(safe-area-inset-bottom, 0px) - 0.5rem))`,
         }}
       >
 
@@ -154,7 +154,7 @@ export default function MobileBottomSheet({
             // The pb absorbs the safe-area gap so the pill content stays centred
             // above the home indicator, while the transform accounts for it.
             paddingTop:    12,
-            paddingBottom: `max(12px, env(safe-area-inset-bottom, 12px))`,
+            paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 0.5rem)`,
           }}
           onClick={() => onExpandedChange(!expanded)}
           onKeyDown={(e) => {
