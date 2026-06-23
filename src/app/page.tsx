@@ -391,7 +391,7 @@ export default function Home() {
     <div className="fixed top-0 left-0 right-0 flex flex-col overflow-hidden bg-gray-50 md:relative md:inset-auto" style={{ height: "calc(var(--vh, 1vh) * 100)" }}>
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
-      <header className="fixed top-2 left-4 right-4 z-[9999] rounded-2xl px-3 py-2 flex items-center gap-3 bg-white/90 backdrop-blur-md border border-white/30 shadow-lg md:relative md:top-auto md:left-0 md:right-0 md:z-50 md:rounded-none md:shrink-0 md:bg-white md:border-0 md:border-b md:border-gray-200 md:shadow-none md:px-3">
+      <header className="hidden md:flex md:items-center md:gap-3 md:relative md:z-50 md:shrink-0 md:bg-white md:border-b md:border-gray-200 md:px-3 md:py-2">
         <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
           <span>🗺️</span>
           <span className="hidden sm:inline">Taiwan Maps</span>
@@ -810,6 +810,19 @@ export default function Home() {
         onSelectBookmark={handleSelectBookmark}
         expanded={sheetExpanded}
         onExpandedChange={setSheetExpanded}
+        searchConfig={{
+          onSearchResult:    setSearchResult,
+          sessionStatus,
+          isLoggedIn:        !!session,
+          userName,
+          userEmail,
+          isAdmin,
+          mobileMenuOpen,
+          onMobileMenuOpen:  setMobileMenuOpen,
+          onSignIn:          () => signIn("google"),
+          onSignOut:         () => signOut(),
+          onShowInviteModal: () => setShowInviteModal(true),
+        }}
       />
 
       {/* ── Status bar ──────────────────────────────────────────────────────── */}

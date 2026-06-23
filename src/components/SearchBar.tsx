@@ -5,9 +5,11 @@ import { SearchResult } from "@/types";
 
 interface SearchBarProps {
   onSearchResult: (result: SearchResult) => void;
+  /** When true the results dropdown opens upward — use when mounted at the screen bottom */
+  dropUp?: boolean;
 }
 
-export default function SearchBar({ onSearchResult }: SearchBarProps) {
+export default function SearchBar({ onSearchResult, dropUp = false }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,7 +77,7 @@ export default function SearchBar({ onSearchResult }: SearchBarProps) {
       </div>
 
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-[2000] max-h-60 overflow-y-auto">
+        <div className={`absolute ${dropUp ? "bottom-full mb-1" : "top-full mt-1"} left-0 right-0 bg-white rounded-lg shadow-xl border border-gray-200 z-[2000] max-h-60 overflow-y-auto`}>
           {results.map((r) => (
             <button
               key={r.place_id}

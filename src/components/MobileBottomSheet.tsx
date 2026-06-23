@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StickyNote, Bookmark } from "@/types";
+import MobileSearchStrip, { SearchConfig } from "@/components/MobileSearchStrip";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -55,8 +56,10 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "layers",    label: "🗂️ 圖層"   },
 ];
 
-// HANDLE_PX: visible height of the collapsed pill (not counting safe area)
-const HANDLE_PX = 60;
+// STRIP_PX: height of the search/auth bar sitting above the handle
+const STRIP_PX  = 60;
+// HANDLE_PX: height of the drag-pill + summary row
+const HANDLE_PX = 56;
 const SHEET_VH  = "72vh";
 
 interface Props {
@@ -68,6 +71,8 @@ interface Props {
   /** Lifted to page.tsx so the layer panel can react to expansion */
   expanded:         boolean;
   onExpandedChange: (v: boolean) => void;
+  /** Search bar + auth FAB rendered above the drag handle */
+  searchConfig:     SearchConfig;
 }
 
 // ── Shared icons ──────────────────────────────────────────────────────────────
@@ -89,6 +94,7 @@ export default function MobileBottomSheet({
   notes, bookmarks, layers,
   onSelectNote, onSelectBookmark,
   expanded, onExpandedChange,
+  searchConfig,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("notes");
 
@@ -137,9 +143,12 @@ export default function MobileBottomSheet({
           height: SHEET_VH,
           transform: expanded
             ? "translateY(0)"
-            : `translateY(calc(${SHEET_VH} - ${HANDLE_PX}px - env(safe-area-inset-bottom, 0px) - 0.5rem))`,
+            : `translateY(calc(${SHEET_VH} - ${STRIP_PX + HANDLE_PX}px - env(safe-area-inset-bottom, 0px) - 0.5rem))`,
         }}
       >
+
+        {/* ── Search strip — always visible, docked above the handle ── */}
+        <MobileSearchStrip {...searchConfig} />
 
         {/* ── Handle / collapsed pill ── */}
         <div
