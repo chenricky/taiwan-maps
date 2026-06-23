@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
@@ -134,6 +134,15 @@ export default function Home() {
   // Bottom sheet expanded state — lifted here so the layer panel can react
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
+  // --vh: tracks window.innerHeight so the container always equals the
+  // visible viewport, even after iOS URL-bar collapse fires a resize.
+  useEffect(() => {
+    const update = () =>
+      document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   // Floating layer panel open/close (mobile: starts closed; desktop: starts open)
   const [layerPanelOpen, setLayerPanelOpen] = useState(true);
@@ -369,7 +378,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 md:relative md:inset-auto md:h-screen">
+      <div className="fixed top-0 left-0 right-0 flex items-center justify-center bg-gray-50 md:relative md:inset-auto" style={{ height: "calc(var(--vh, 1vh) * 100)" }}>
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
           <div className="text-gray-600 font-medium">Loading Taiwan Maps...</div>
@@ -379,10 +388,10 @@ export default function Home() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-gray-50 md:relative md:inset-auto md:h-screen">
+    <div className="fixed top-0 left-0 right-0 flex flex-col overflow-hidden bg-gray-50 md:relative md:inset-auto" style={{ height: "calc(var(--vh, 1vh) * 100)" }}>
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
-      <header className="shrink-0 relative z-[9999] px-4 py-2 flex items-center gap-3 bg-white/85 backdrop-blur-md border-b border-white/40 shadow-md md:z-50 md:bg-white md:border-gray-200 md:shadow-none md:px-3">
+      <header className="fixed top-2 left-4 right-4 z-[9999] rounded-2xl px-3 py-2 flex items-center gap-3 bg-white/90 backdrop-blur-md border border-white/30 shadow-lg md:relative md:top-auto md:left-0 md:right-0 md:z-50 md:rounded-none md:shrink-0 md:bg-white md:border-0 md:border-b md:border-gray-200 md:shadow-none md:px-3">
         <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
           <span>🗺️</span>
           <span className="hidden sm:inline">Taiwan Maps</span>
