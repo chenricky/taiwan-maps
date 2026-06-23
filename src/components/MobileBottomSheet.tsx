@@ -131,19 +131,19 @@ export default function MobileBottomSheet({
       */}
       <div
         className={`
-          md:hidden fixed bottom-0 left-0 right-0 z-[2000]
+          md:hidden fixed bottom-0 left-4 right-4 w-auto z-[2000]
           flex flex-col
           bg-white/85 backdrop-blur-xl
-          border-t border-x border-white/40
-          shadow-[0_-8px_30px_-4px_rgba(0,0,0,0.14)]
-          rounded-t-2xl
+          border border-white/30
+          shadow-[0_-6px_24px_-2px_rgba(0,0,0,0.18),0_0_16px_rgba(0,0,0,0.08)]
+          rounded-2xl
           transition-transform duration-300 ease-out
         `}
         style={{
           height: SHEET_VH,
           transform: expanded
             ? "translateY(0)"
-            : `translateY(calc(${SHEET_VH} - ${STRIP_PX + HANDLE_PX}px - env(safe-area-inset-bottom, 0px) - 0.5rem))`,
+            : `translateY(calc(${SHEET_VH} - ${STRIP_PX + HANDLE_PX + 16}px - env(safe-area-inset-bottom, 0px) - 0.5rem))`,
         }}
       >
 
