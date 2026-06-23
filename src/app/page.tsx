@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
@@ -134,17 +134,7 @@ export default function Home() {
   // Bottom sheet expanded state — lifted here so the layer panel can react
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
-  // --vh CSS variable: re-computed on every resize so the layout stays anchored
-  // to window.innerHeight (actual visible pixels) instead of the unstable 100dvh,
-  // which jumps when iOS collapses/expands the URL bar and displaces our header.
-  useEffect(() => {
-    const setVh = () => {
-      document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
-    };
-    setVh();
-    window.addEventListener("resize", setVh);
-    return () => window.removeEventListener("resize", setVh);
-  }, []);
+
   // Floating layer panel open/close (mobile: starts closed; desktop: starts open)
   const [layerPanelOpen, setLayerPanelOpen] = useState(true);
 
@@ -379,7 +369,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="w-screen flex items-center justify-center bg-gray-50" style={{ height: "calc(var(--vh, 1vh) * 100)" }}>
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-50 md:relative md:inset-auto md:h-screen">
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
           <div className="text-gray-600 font-medium">Loading Taiwan Maps...</div>
@@ -389,10 +379,10 @@ export default function Home() {
   }
 
   return (
-    <div className="w-screen flex flex-col overflow-hidden bg-gray-50" style={{ height: "calc(var(--vh, 1vh) * 100)" }}>
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-gray-50 md:relative md:inset-auto md:h-screen">
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
-      <header className="px-3 py-2 flex items-center gap-3 fixed top-2 left-4 right-4 z-[400] rounded-2xl bg-white/90 backdrop-blur-md border border-white/40 shadow-lg md:relative md:top-auto md:left-auto md:right-auto md:z-50 md:rounded-none md:shrink-0 md:bg-white md:border-0 md:border-b md:border-gray-200 md:shadow-none md:px-3">
+      <header className="shrink-0 relative z-[9999] px-4 py-2 flex items-center gap-3 bg-white/85 backdrop-blur-md border-b border-white/40 shadow-md md:z-50 md:bg-white md:border-gray-200 md:shadow-none md:px-3">
         <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
           <span>🗺️</span>
           <span className="hidden sm:inline">Taiwan Maps</span>
