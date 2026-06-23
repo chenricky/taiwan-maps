@@ -8,16 +8,26 @@
       "content": "Test",
       "color": "#fef68a",
       "createdAt": "2026-06-23T01:36:36.159Z",
+      "comments": [
+        {
+          "id": "cmt-1782178601716-3go9v",
+          "text": "Test",
+          "createdAt": "2026-06-23T01:36:41.716Z",
+          "createdBy": {
+            "name": "Ricky Chen",
+            "email": "chenricky@gmail.com"
+          }
+        }
+      ],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     }
   ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-06-23T01:36:36.268Z"
+  "updatedAt": "2026-06-23T01:36:41.716Z"
 }
