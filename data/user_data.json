@@ -1,21 +1,9 @@
 {
-  "bookmarks": [
-    {
-      "id": "bm-1782966209549",
-      "lat": 24.916923674486057,
-      "lng": 121.38852209842226,
-      "label": "drgeg",
-      "createdAt": "2026-07-02T04:23:29.549Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
-    }
-  ],
+  "bookmarks": [],
   "notes": [],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-07-02T04:23:29.200Z"
+  "updatedAt": "2026-07-02T04:23:39.099Z"
 }
