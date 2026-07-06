@@ -92,6 +92,9 @@ interface MapComponentProps {
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
   flyToNoteTarget?: NoteTarget | null;
+  /** Pixels currently occupied by an overlay drawer on each side, so floating map controls can slide clear of it. */
+  leftInset?: number;
+  rightInset?: number;
 }
 
 function MapController({
@@ -172,6 +175,8 @@ export default function MapComponent({
   searchResult,
   flyToTarget,
   flyToNoteTarget,
+  leftInset = 0,
+  rightInset = 0,
 }: MapComponentProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
@@ -314,8 +319,11 @@ export default function MapComponent({
         )}
       </MapContainer>
 
-      {/* Controls overlay */}
-      <div className="absolute bottom-8 right-4 z-[1000] flex flex-col gap-2">
+      {/* Controls overlay — shifts left when the right-hand drawer is open so it stays clear */}
+      <div
+        className="absolute bottom-8 z-[1000] flex flex-col gap-2 transition-[right] duration-300 ease-in-out"
+        style={{ right: 16 + rightInset }}
+      >
         <button
           onClick={handleLocateMe}
           className="bg-white p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
@@ -335,6 +343,20 @@ export default function MapComponent({
           </svg>
         </button>
       </div>
+
+      {/* Slide the Leaflet zoom/attribution corner controls clear of open drawers */}
+      <style jsx global>{`
+        .leaflet-top.leaflet-left,
+        .leaflet-bottom.leaflet-left {
+          transition: margin-left 0.3s ease-in-out;
+          margin-left: ${leftInset}px;
+        }
+        .leaflet-top.leaflet-right,
+        .leaflet-bottom.leaflet-right {
+          transition: margin-right 0.3s ease-in-out;
+          margin-right: ${rightInset}px;
+        }
+      `}</style>
     </div>
   );
 }

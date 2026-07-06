@@ -35,6 +35,9 @@ interface LayerToggle {
   activeText: string;    // Tailwind text class when ON
 }
 
+// Width (px) of the floating left/right overlay drawers — matches Tailwind's w-72 / left-72 / right-72.
+const PANEL_WIDTH = 288;
+
 const LAYER_TOGGLES: LayerToggle[] = [
   {
     key: "tourist",
@@ -505,52 +508,10 @@ export default function Home() {
       </header>
 
       {/* ── Main content ────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 relative overflow-hidden">
 
-        {/* Left sidebar (desktop) */}
-        <div
-          className={`hidden md:flex md:flex-col bg-white border-r border-gray-200 transition-all duration-300 shrink-0 overflow-hidden ${
-            sidebarCollapsed ? "w-0 border-r-0" : "w-64 md:w-72"
-          }`}
-        >
-          <div className="p-3 space-y-3 overflow-y-auto flex-1">
-            {/* RoutingPanel hidden — UI disabled, code preserved */}
-            <div className="hidden">
-              <RoutingPanel
-                onRoute={handleRoute}
-                routeCoords={routeCoords}
-                routeDistance={routeDistance}
-                routeDuration={routeDuration}
-              />
-            </div>
-            <BookmarksSidebar
-              bookmarks={appData.bookmarks}
-              onDeleteBookmark={handleDeleteBookmark}
-              onSelectBookmark={handleSelectBookmark}
-              onSetRouteStart={handleSetRouteStart}
-              onSetRouteEnd={handleSetRouteEnd}
-            />
-          </div>
-        </div>
-
-        {/* Sidebar toggle (left) */}
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden md:flex bg-white border-r border-gray-200 px-1 hover:bg-gray-50 items-center z-10 shrink-0"
-          title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-        >
-          <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-
-        {/* Map area */}
-        <div className="flex-1 relative min-w-0">
+        {/* Map area — fills 100% of the main content area; side panels float on top */}
+        <div className="absolute inset-0">
           <MapComponent
             bookmarks={appData.bookmarks}
             stickyNotes={appData.stickyNotes}
@@ -570,6 +531,8 @@ export default function Home() {
             searchResult={searchResult}
             flyToTarget={flyToTarget}
             flyToNoteTarget={flyToNoteTarget}
+            leftInset={sidebarCollapsed ? 0 : PANEL_WIDTH}
+            rightInset={rightPanelCollapsed ? 0 : PANEL_WIDTH}
           />
 
           {/* ── Floating Layer Control Panel ──────────────────────────────── */}
@@ -579,7 +542,11 @@ export default function Home() {
           */}
 
           {/* ── DESKTOP panel: top-left, vertical, scrollable ── */}
-          <div className="hidden md:flex absolute top-3 left-3 z-[1000] flex-col gap-0 pointer-events-none">
+          {/* Slides right when the left bookmarks drawer is open so the two never overlap */}
+          <div
+            className="hidden md:flex absolute top-3 z-[1000] flex-col gap-0 pointer-events-none transition-[left] duration-300 ease-in-out"
+            style={{ left: sidebarCollapsed ? 12 : PANEL_WIDTH + 12 }}
+          >
             {/* Panel card */}
             <div
               className="pointer-events-auto bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden"
@@ -705,27 +672,56 @@ export default function Home() {
           </div>
           {/* ── End Floating Layer Control Panel ─────────────────────────── */}
         </div>
+        {/* ── End map area ──────────────────────────────────────────────────── */}
 
-        {/* Right panel toggle */}
+        {/* ── Left bookmarks drawer (desktop) — floats over the map, slides off-screen when collapsed ── */}
+        <div
+          className={`hidden md:flex md:flex-col absolute top-0 left-0 h-full w-72 bg-white border-r border-gray-200 shadow-xl z-[1200] transition-transform duration-300 ease-in-out ${
+            sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
+          }`}
+        >
+          <div className="p-3 space-y-3 overflow-y-auto flex-1">
+            {/* RoutingPanel hidden — UI disabled, code preserved */}
+            <div className="hidden">
+              <RoutingPanel
+                onRoute={handleRoute}
+                routeCoords={routeCoords}
+                routeDistance={routeDistance}
+                routeDuration={routeDuration}
+              />
+            </div>
+            <BookmarksSidebar
+              bookmarks={appData.bookmarks}
+              onDeleteBookmark={handleDeleteBookmark}
+              onSelectBookmark={handleSelectBookmark}
+              onSetRouteStart={handleSetRouteStart}
+              onSetRouteEnd={handleSetRouteEnd}
+            />
+          </div>
+        </div>
+
+        {/* Left drawer toggle tab — anchored to the drawer's edge, slides with it */}
         <button
-          onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-          className="hidden md:flex bg-white border-l border-gray-200 px-1 hover:bg-gray-50 items-center z-10 shrink-0"
-          title={rightPanelCollapsed ? "顯示便利貼清單" : "隱藏便利貼清單"}
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-[1300] w-6 h-14 items-center justify-center bg-white border border-gray-200 rounded-r-lg shadow-md hover:bg-gray-50 transition-all duration-300 ease-in-out ${
+            sidebarCollapsed ? "left-0" : "left-72"
+          }`}
+          title={sidebarCollapsed ? "顯示書籤" : "隱藏書籤"}
         >
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${rightPanelCollapsed ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-gray-500 transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        {/* Right sticky-notes panel */}
+        {/* ── Right sticky-notes drawer (desktop) — floats over the map, slides off-screen when collapsed ── */}
         <div
-          className={`hidden md:flex md:flex-col bg-white border-l border-gray-200 transition-all duration-300 shrink-0 overflow-hidden ${
-            rightPanelCollapsed ? "w-0 border-l-0" : "w-64 md:w-72"
+          className={`hidden md:flex md:flex-col absolute top-0 right-0 h-full w-72 bg-white border-l border-gray-200 shadow-xl z-[1200] transition-transform duration-300 ease-in-out ${
+            rightPanelCollapsed ? "translate-x-full" : "translate-x-0"
           }`}
         >
           {/* StickyNotesSidebar fills the full panel height */}
@@ -747,6 +743,24 @@ export default function Home() {
             />
           </div>
         </div>
+
+        {/* Right drawer toggle tab — anchored to the drawer's edge, slides with it */}
+        <button
+          onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+          className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-[1300] w-6 h-14 items-center justify-center bg-white border border-gray-200 rounded-l-lg shadow-md hover:bg-gray-50 transition-all duration-300 ease-in-out ${
+            rightPanelCollapsed ? "right-0" : "right-72"
+          }`}
+          title={rightPanelCollapsed ? "顯示便利貼清單" : "隱藏便利貼清單"}
+        >
+          <svg
+            className={`w-4 h-4 text-gray-500 transition-transform ${rightPanelCollapsed ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
