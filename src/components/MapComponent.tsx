@@ -9,6 +9,7 @@ import {
   Popup,
   Polyline,
   useMapEvents,
+  ZoomControl,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -213,11 +214,13 @@ export default function MapComponent({
         zoom={12}
         className="h-full w-full z-0"
         ref={mapRef}
+        zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <ZoomControl position="bottomright" />
 
         <MapController
           searchResult={searchResult}
