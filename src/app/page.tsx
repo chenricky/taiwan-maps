@@ -533,6 +533,7 @@ export default function Home() {
             flyToNoteTarget={flyToNoteTarget}
             leftInset={sidebarCollapsed ? 0 : PANEL_WIDTH}
             rightInset={rightPanelCollapsed ? 0 : PANEL_WIDTH}
+            sheetExpanded={sheetExpanded}
           />
 
           {/* ── Floating Layer Control Panel ──────────────────────────────── */}
