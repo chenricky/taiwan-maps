@@ -1,9 +1,23 @@
 {
   "bookmarks": [],
-  "notes": [],
+  "notes": [
+    {
+      "id": "note-1787240738101",
+      "lat": 25.047969501131583,
+      "lng": 121.5407180786133,
+      "content": "node 1",
+      "color": "#fef68a",
+      "createdAt": "2026-08-20T15:45:38.101Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      },
+      "comments": []
+    }
+  ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-07-06T02:15:13.103Z"
+  "updatedAt": "2026-08-20T15:45:38.174Z"
 }
