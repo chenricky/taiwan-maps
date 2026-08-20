@@ -92,9 +92,6 @@ interface MapComponentProps {
   searchResult: SearchResult | null;
   flyToTarget?: FlyToTarget | null;
   flyToNoteTarget?: NoteTarget | null;
-  /** Pixels currently occupied by an overlay drawer on each side, so floating map controls can slide clear of it. Desktop-only — mobile has no side drawers. */
-  leftInset?: number;
-  rightInset?: number;
   /** Whether the mobile bottom sheet is expanded — hides the locate-me FAB so it doesn't float over the sheet content. */
   sheetExpanded?: boolean;
 }
@@ -177,8 +174,6 @@ export default function MapComponent({
   searchResult,
   flyToTarget,
   flyToNoteTarget,
-  leftInset = 0,
-  rightInset = 0,
   sheetExpanded = false,
 }: MapComponentProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
@@ -186,9 +181,8 @@ export default function MapComponent({
   );
   const mapRef = useRef<L.Map | null>(null);
 
-  // Tracks whether we're below Tailwind's `md` breakpoint (768px) — the desktop
-  // side drawers don't exist on mobile, so their leftInset/rightInset push values
-  // must never apply to mobile's corner controls (zoom, locate-me).
+  // Tracks whether we're below Tailwind's `md` breakpoint (768px) — determines
+  // which corner the zoom control docks to and how the locate-me FAB is positioned.
   const [isMobile, setIsMobile] = useState(false);
 
   // When the iOS URL bar collapses the viewport expands and Leaflet's tile grid
@@ -330,17 +324,14 @@ export default function MapComponent({
         )}
       </MapContainer>
 
-      {/* Controls overlay.
-          Desktop: bottom-right, shifts left when the right-hand drawer is open so it stays clear.
-          Mobile: bottom-right too, but floated above the bottom sheet's collapsed handle (and above
-          its z-[2000] stacking context) instead of being pushed by the desktop-only rightInset;
-          hidden while the sheet is expanded so it doesn't float over the sheet's content. */}
+      {/* Controls overlay, bottom-right.
+          Mobile: floated above the bottom sheet's collapsed handle (and above its z-[2000]
+          stacking context); hidden while the sheet is expanded so it doesn't float over its content. */}
       <div
-        className={`absolute flex flex-col gap-2 transition-[right] duration-300 ease-in-out
+        className={`absolute right-4 flex flex-col gap-2
           bottom-[calc(160px+env(safe-area-inset-bottom,0px))] md:bottom-8
           ${isMobile ? "z-[2001]" : "z-[1000]"}
           ${sheetExpanded ? "hidden md:flex" : "flex"}`}
-        style={{ right: 16 + (isMobile ? 0 : rightInset) }}
       >
         <button
           onClick={handleLocateMe}
@@ -361,24 +352,6 @@ export default function MapComponent({
           </svg>
         </button>
       </div>
-
-      {/* Slide the Leaflet zoom/attribution corner controls clear of open drawers.
-          Desktop-only (md: 768px+) — mobile has no side drawers, so its corner
-          controls must stay flush in their native corner. */}
-      <style jsx global>{`
-        @media (min-width: 768px) {
-          .leaflet-top.leaflet-left,
-          .leaflet-bottom.leaflet-left {
-            transition: margin-left 0.3s ease-in-out;
-            margin-left: ${leftInset}px;
-          }
-          .leaflet-top.leaflet-right,
-          .leaflet-bottom.leaflet-right {
-            transition: margin-right 0.3s ease-in-out;
-            margin-right: ${rightInset}px;
-          }
-        }
-      `}</style>
     </div>
   );
 }

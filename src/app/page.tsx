@@ -6,13 +6,12 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
 import SearchBar from "@/components/SearchBar";
 import RoutingPanel from "@/components/RoutingPanel";
-import BookmarksSidebar from "@/components/BookmarksSidebar";
 import BookmarkModal from "@/components/BookmarkModal";
 import StickyNoteModal from "@/components/StickyNoteModal";
 import StickyNoteEditModal from "@/components/StickyNoteEditModal";
 import TodoPanel from "@/components/TodoPanel";
 import InviteManagerModal from "@/components/InviteManagerModal";
-import StickyNotesSidebar from "@/components/StickyNotesSidebar";
+import MapControlPanel from "@/components/MapControlPanel";
 import MobileBottomSheet from "@/components/MobileBottomSheet";
 import { useAppData } from "@/hooks/useAppData";
 
@@ -34,9 +33,6 @@ interface LayerToggle {
   activeBorder: string;  // Tailwind border class when ON
   activeText: string;    // Tailwind text class when ON
 }
-
-// Width (px) of the floating left/right overlay drawers — matches Tailwind's w-72 / left-72 / right-72.
-const PANEL_WIDTH = 288;
 
 const LAYER_TOGGLES: LayerToggle[] = [
   {
@@ -129,9 +125,6 @@ export default function Home() {
   const [showTouristLayer, setShowTouristLayer] = useState(false);
   const [showHeatmapLayer, setShowHeatmapLayer] = useState(false);
 
-  // Panel collapse state
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   // Mobile auth FAB dropdown
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Bottom sheet expanded state — lifted here so the layer panel can react
@@ -146,9 +139,6 @@ export default function Home() {
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
-
-  // Floating layer panel open/close (mobile: starts closed; desktop: starts open)
-  const [layerPanelOpen, setLayerPanelOpen] = useState(true);
 
   // Click target for modals
   const [clickTarget, setClickTarget] = useState<{ lat: number; lng: number } | null>(null);
@@ -359,14 +349,6 @@ export default function Home() {
     [appData, saveData]
   );
 
-  const handleSetRouteStart = useCallback((bm: Bookmark) => {
-    setRouteStart({ lat: bm.lat, lng: bm.lng });
-  }, []);
-
-  const handleSetRouteEnd = useCallback((bm: Bookmark) => {
-    setRouteEnd({ lat: bm.lat, lng: bm.lng });
-  }, []);
-
   const handleSelectBookmark = useCallback((bm: Bookmark) => {
     flyToKeyRef.current += 1;
     setFlyToTarget({ bookmark: bm, key: flyToKeyRef.current });
@@ -531,237 +513,42 @@ export default function Home() {
             searchResult={searchResult}
             flyToTarget={flyToTarget}
             flyToNoteTarget={flyToNoteTarget}
-            leftInset={sidebarCollapsed ? 0 : PANEL_WIDTH}
-            rightInset={rightPanelCollapsed ? 0 : PANEL_WIDTH}
             sheetExpanded={sheetExpanded}
           />
 
-          {/* ── Floating Layer Control Panel ──────────────────────────────── */}
-          {/*
-            DESKTOP  (md+): top-left corner, vertical list, max-h scroll
-            MOBILE   (<md): bottom sheet, 2-col grid, pinned above map edge
-          */}
-
-          {/* ── DESKTOP panel: top-left, vertical, scrollable ── */}
-          {/* Slides right when the left bookmarks drawer is open so the two never overlap */}
-          <div
-            className="hidden md:flex absolute top-3 z-[1000] flex-col gap-0 pointer-events-none transition-[left] duration-300 ease-in-out"
-            style={{ left: sidebarCollapsed ? 12 : PANEL_WIDTH + 12 }}
-          >
-            {/* Panel card */}
-            <div
-              className="pointer-events-auto bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden"
-              style={{ maxHeight: "85vh" }}
-            >
-              {/* Panel header / collapse toggle */}
-              <button
-                onClick={() => setLayerPanelOpen((v) => !v)}
-                className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors"
-              >
-                <span className="text-xs font-semibold text-gray-700 tracking-wide uppercase">
-                  🗂️ 地圖圖層
-                </span>
-                <svg
-                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${layerPanelOpen ? "" : "rotate-180"}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-              </button>
-
-              {/* Toggle buttons — vertical list */}
-              {layerPanelOpen && (
-                <div className="overflow-y-auto pr-0.5" style={{ maxHeight: "calc(85vh - 44px)" }}>
-                  <div className="flex flex-col gap-1 p-2">
-                    {LAYER_TOGGLES.map((layer) => {
-                      const isOn = layerActive[layer.key];
-                      return (
-                        <button
-                          key={layer.key}
-                          onClick={layerToggleHandlers[layer.key]}
-                          title={`${isOn ? "隱藏" : "顯示"} ${layer.label}`}
-                          className={`
-                            flex items-center gap-2.5 w-full min-h-[44px] px-3 py-2
-                            rounded-lg border font-medium text-sm
-                            transition-all duration-150 text-left
-                            ${isOn
-                              ? `${layer.activeColor} ${layer.activeBorder} ${layer.activeText} shadow-sm`
-                              : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:border-gray-300"
-                            }
-                          `}
-                        >
-                          <span className="text-base leading-none shrink-0">{layer.icon}</span>
-                          <span className="leading-tight">
-                            {isOn ? "隱藏" : "顯示"}{layer.label}
-                          </span>
-                          {/* Active indicator dot */}
-                          {isOn && (
-                            <span className="ml-auto w-2 h-2 rounded-full bg-white/70 shrink-0" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── MOBILE layer panel — replaced by the 圖層 tab inside MobileBottomSheet ── */}
-          <div className="hidden absolute bottom-16 left-4 right-4 z-[1000] pointer-events-none">
-            <div className="pointer-events-auto bg-white/97 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              {/* Mobile panel header */}
-              <button
-                onClick={() => setLayerPanelOpen((v) => !v)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200 active:bg-gray-100"
-              >
-                <span className="text-sm font-semibold text-gray-700">
-                  🗂️ 地圖圖層控制
-                </span>
-                <div className="flex items-center gap-2">
-                  {/* Active layer count badge */}
-                  {Object.values(layerActive).filter(Boolean).length > 0 && (
-                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      {Object.values(layerActive).filter(Boolean).length}
-                    </span>
-                  )}
-                  <svg
-                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${layerPanelOpen ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
-                </div>
-              </button>
-
-              {/* 2-column grid of toggle buttons */}
-              {layerPanelOpen && (
-                <div className="p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {LAYER_TOGGLES.map((layer) => {
-                      const isOn = layerActive[layer.key];
-                      return (
-                        <button
-                          key={layer.key}
-                          onClick={layerToggleHandlers[layer.key]}
-                          className={`
-                            flex items-center gap-2 min-h-[44px] w-full px-3 py-2.5
-                            rounded-xl border font-medium text-sm
-                            transition-all duration-150 text-left
-                            ${isOn
-                              ? `${layer.activeColor} ${layer.activeBorder} ${layer.activeText} shadow-sm`
-                              : "bg-gray-50 border-gray-200 text-gray-600 active:bg-gray-100"
-                            }
-                          `}
-                        >
-                          <span className="text-base leading-none shrink-0">{layer.icon}</span>
-                          <span className="text-xs leading-tight">
-                            {isOn ? "隱藏" : "顯示"}<br />
-                            <span className="font-semibold">{layer.label}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          {/* ── End Floating Layer Control Panel ─────────────────────────── */}
+          {/* ── Combined desktop panel: bookmarks + sticky notes + layers in one tabbed pane ── */}
+          {/* Mirrors the mobile bottom sheet's tab structure; expanded by default for a cleaner map view. */}
+          <MapControlPanel
+            notes={appData.stickyNotes}
+            bookmarks={appData.bookmarks}
+            layers={LAYER_TOGGLES.map(l => ({
+              ...l,
+              active:   layerActive[l.key],
+              onToggle: layerToggleHandlers[l.key],
+            }))}
+            onSelectNote={handleSelectNote}
+            onSelectBookmark={handleSelectBookmark}
+            onDeleteBookmark={handleDeleteBookmark}
+          />
         </div>
         {/* ── End map area ──────────────────────────────────────────────────── */}
 
-        {/* ── Left bookmarks drawer (desktop) — floats over the map, slides off-screen when collapsed ── */}
-        <div
-          className={`hidden md:flex md:flex-col absolute top-0 left-0 h-full w-72 bg-white border-r border-gray-200 shadow-xl z-[1200] transition-transform duration-300 ease-in-out ${
-            sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
-          }`}
-        >
-          <div className="p-3 space-y-3 overflow-y-auto flex-1">
-            {/* RoutingPanel hidden — UI disabled, code preserved */}
-            <div className="hidden">
-              <RoutingPanel
-                onRoute={handleRoute}
-                routeCoords={routeCoords}
-                routeDistance={routeDistance}
-                routeDuration={routeDuration}
-              />
-            </div>
-            <BookmarksSidebar
-              bookmarks={appData.bookmarks}
-              onDeleteBookmark={handleDeleteBookmark}
-              onSelectBookmark={handleSelectBookmark}
-              onSetRouteStart={handleSetRouteStart}
-              onSetRouteEnd={handleSetRouteEnd}
-            />
-          </div>
+        {/* RoutingPanel + TodoPanel — hidden from UI, all data + handlers fully preserved */}
+        <div className="hidden">
+          <RoutingPanel
+            onRoute={handleRoute}
+            routeCoords={routeCoords}
+            routeDistance={routeDistance}
+            routeDuration={routeDuration}
+          />
+          <TodoPanel
+            todos={appData.todos}
+            bookmarks={appData.bookmarks}
+            onAddTodo={handleAddTodo}
+            onToggleTodo={handleToggleTodo}
+            onDeleteTodo={handleDeleteTodo}
+          />
         </div>
-
-        {/* Left drawer toggle tab — anchored to the drawer's edge, slides with it */}
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-[1300] w-6 h-14 items-center justify-center bg-white border border-gray-200 rounded-r-lg shadow-md hover:bg-gray-50 transition-all duration-300 ease-in-out ${
-            sidebarCollapsed ? "left-0" : "left-72"
-          }`}
-          title={sidebarCollapsed ? "顯示書籤" : "隱藏書籤"}
-        >
-          <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-
-        {/* ── Right sticky-notes drawer (desktop) — floats over the map, slides off-screen when collapsed ── */}
-        <div
-          className={`hidden md:flex md:flex-col absolute top-0 right-0 h-full w-72 bg-white border-l border-gray-200 shadow-xl z-[1200] transition-transform duration-300 ease-in-out ${
-            rightPanelCollapsed ? "translate-x-full" : "translate-x-0"
-          }`}
-        >
-          {/* StickyNotesSidebar fills the full panel height */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <StickyNotesSidebar
-              notes={appData.stickyNotes}
-              onSelectNote={handleSelectNote}
-            />
-          </div>
-
-          {/* TodoPanel — hidden from UI, all data + handlers fully preserved */}
-          <div className="hidden">
-            <TodoPanel
-              todos={appData.todos}
-              bookmarks={appData.bookmarks}
-              onAddTodo={handleAddTodo}
-              onToggleTodo={handleToggleTodo}
-              onDeleteTodo={handleDeleteTodo}
-            />
-          </div>
-        </div>
-
-        {/* Right drawer toggle tab — anchored to the drawer's edge, slides with it */}
-        <button
-          onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-          className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-[1300] w-6 h-14 items-center justify-center bg-white border border-gray-200 rounded-l-lg shadow-md hover:bg-gray-50 transition-all duration-300 ease-in-out ${
-            rightPanelCollapsed ? "right-0" : "right-72"
-          }`}
-          title={rightPanelCollapsed ? "顯示便利貼清單" : "隱藏便利貼清單"}
-        >
-          <svg
-            className={`w-4 h-4 text-gray-500 transition-transform ${rightPanelCollapsed ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
