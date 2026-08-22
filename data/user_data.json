@@ -35,34 +35,11 @@
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       }
-    },
-    {
-      "id": "note-1787404866227",
-      "lat": 37.3178058907195,
-      "lng": -121.77145957946782,
-      "content": "Doris Richard home",
-      "color": "#fef68a",
-      "createdAt": "2026-08-22T13:21:06.227Z",
-      "comments": [
-        {
-          "id": "cmt-1787404885894-2znpu",
-          "text": "Yes",
-          "createdAt": "2026-08-22T13:21:25.894Z",
-          "createdBy": {
-            "name": "Ricky Chen",
-            "email": "chenricky@gmail.com"
-          }
-        }
-      ],
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
     }
   ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-22T13:21:25.894Z"
+  "updatedAt": "2026-08-22T15:04:19.196Z"
 }
