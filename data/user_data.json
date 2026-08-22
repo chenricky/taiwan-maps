@@ -20,16 +20,26 @@
       "content": "Doris Richard home",
       "color": "#fef68a",
       "createdAt": "2026-08-22T15:08:54.264Z",
+      "comments": [
+        {
+          "id": "cmt-1787411361470-hgnbo",
+          "text": "will be here by 5",
+          "createdAt": "2026-08-22T15:09:21.470Z",
+          "createdBy": {
+            "name": "Ricky Chen",
+            "email": "chenricky@gmail.com"
+          }
+        }
+      ],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     }
   ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-22T15:08:54.437Z"
+  "updatedAt": "2026-08-22T15:09:21.470Z"
 }
