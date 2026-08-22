@@ -12,10 +12,24 @@
       }
     }
   ],
-  "notes": [],
+  "notes": [
+    {
+      "id": "note-1787411334264",
+      "lat": 37.31780731280007,
+      "lng": -121.7713236808777,
+      "content": "Doris Richard home",
+      "color": "#fef68a",
+      "createdAt": "2026-08-22T15:08:54.264Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      },
+      "comments": []
+    }
+  ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-22T15:04:24.835Z"
+  "updatedAt": "2026-08-22T15:08:54.437Z"
 }
