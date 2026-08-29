@@ -1,17 +1,5 @@
 {
-  "bookmarks": [
-    {
-      "id": "bm-1787240796885",
-      "lat": 25.045947760216205,
-      "lng": 121.5389370918274,
-      "label": "bookmark",
-      "createdAt": "2026-08-20T15:46:36.885Z",
-      "createdBy": {
-        "name": "Ricky Chen",
-        "email": "chenricky@gmail.com"
-      }
-    }
-  ],
+  "bookmarks": [],
   "notes": [
     {
       "id": "note-1787411334264",
@@ -52,16 +40,16 @@
       "content": "cwe",
       "color": "#fef68a",
       "createdAt": "2026-08-22T15:12:03.779Z",
+      "comments": [],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     }
   ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-22T15:12:04.067Z"
+  "updatedAt": "2026-08-29T04:53:06.043Z"
 }
