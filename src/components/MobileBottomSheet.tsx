@@ -68,6 +68,7 @@ interface Props {
   layers:           LayerItem[];
   onSelectNote:     (note: StickyNote) => void;
   onSelectBookmark: (bm: Bookmark)     => void;
+  onDeleteBookmark: (id: string)       => void;
   /** Lifted to page.tsx so the layer panel can react to expansion */
   expanded:         boolean;
   onExpandedChange: (v: boolean) => void;
@@ -88,19 +89,42 @@ function FlyIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2}
+      viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h10" />
+    </svg>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function MobileBottomSheet({
   notes, bookmarks, layers,
-  onSelectNote, onSelectBookmark,
+  onSelectNote, onSelectBookmark, onDeleteBookmark,
   expanded, onExpandedChange,
   searchConfig,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("notes");
+  // Guards against a fast double-tap: once a delete is in flight the list is about to
+  // shift (the removed row disappears), so a near-simultaneous second tap could land on
+  // whatever now occupies that spot instead of its intended target.
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const sortedNotes = [...notes].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const handleDeleteBookmarkClick = (id: string) => {
+    if (deletingId) return;
+    setDeletingId(id);
+    onDeleteBookmark(id);
+    // The bookmark disappears once `bookmarks` updates from the parent; this timeout is
+    // just a safety net in case that round-trip stalls, so the list never stays locked.
+    setTimeout(() => setDeletingId(null), 1000);
+  };
 
   const handleNoteClick = (note: StickyNote) => {
     onSelectNote(note);
@@ -293,29 +317,38 @@ export default function MobileBottomSheet({
                   </p>
                 </div>
               ) : (
-                <ul className="divide-y divide-gray-100/90">
+                <ul className={`divide-y divide-gray-100/90 ${deletingId ? "pointer-events-none" : ""}`}>
                   {bookmarks.map(bm => (
-                    <li
-                      key={bm.id}
-                      role="button" tabIndex={0}
-                      onClick={() => handleBookmarkClick(bm)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleBookmarkClick(bm); }}
-                      className="flex items-center gap-3 px-4 py-3.5 active:bg-blue-50/80 cursor-pointer
-                                 focus:outline-none focus-visible:bg-blue-50"
-                    >
-                      <div className="shrink-0 w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-base shadow-sm">
-                        📍
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{bm.label}</p>
-                        <p className="text-[11px] text-gray-400 font-mono">
-                          {bm.lat.toFixed(4)}, {bm.lng.toFixed(4)}
-                        </p>
-                        {bm.createdBy?.name && (
-                          <p className="text-[11px] text-gray-400 mt-0.5">by {bm.createdBy.name}</p>
-                        )}
-                      </div>
-                      <div className="shrink-0 text-gray-300"><FlyIcon /></div>
+                    <li key={bm.id} className={`flex items-center gap-1 px-4 py-3.5 transition-opacity ${deletingId === bm.id ? "opacity-40" : ""}`}>
+                      <button
+                        role="button" tabIndex={0}
+                        onClick={() => handleBookmarkClick(bm)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleBookmarkClick(bm); }}
+                        className="flex items-center gap-3 min-w-0 flex-1 text-left active:bg-blue-50/80 cursor-pointer
+                                   focus:outline-none focus-visible:bg-blue-50"
+                      >
+                        <div className="shrink-0 w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-base shadow-sm">
+                          📍
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{bm.label}</p>
+                          <p className="text-[11px] text-gray-400 font-mono">
+                            {bm.lat.toFixed(4)}, {bm.lng.toFixed(4)}
+                          </p>
+                          {bm.createdBy?.name && (
+                            <p className="text-[11px] text-gray-400 mt-0.5">by {bm.createdBy.name}</p>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-gray-300"><FlyIcon /></div>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteBookmarkClick(bm.id)}
+                        className="shrink-0 p-2 text-red-400 active:bg-red-50 active:text-red-600 rounded-lg transition-colors"
+                        title="刪除書籤"
+                        aria-label="刪除書籤"
+                      >
+                        <TrashIcon />
+                      </button>
                     </li>
                   ))}
                 </ul>

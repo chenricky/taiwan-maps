@@ -30,7 +30,7 @@ export default function BookmarkModal({
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-gray-700">
-              📍 Add Bookmark
+              📍 Add Location
             </h3>
             <button
               onClick={onClose}
@@ -60,14 +60,14 @@ export default function BookmarkModal({
               onClick={onAddNote}
               className="flex-1 px-4 py-2 text-sm text-yellow-700 bg-yellow-100 rounded-lg hover:bg-yellow-200 transition-colors font-medium"
             >
-              📝 Add Note Instead
+              📝 Add as Note
             </button>
             <button
               onClick={handleSave}
               disabled={!label.trim()}
               className="flex-1 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
             >
-              Save Bookmark
+              Add as Bookmark
             </button>
           </div>
         </div>

@@ -610,6 +610,7 @@ export default function Home() {
         }))}
         onSelectNote={handleSelectNote}
         onSelectBookmark={handleSelectBookmark}
+        onDeleteBookmark={handleDeleteBookmark}
         expanded={sheetExpanded}
         onExpandedChange={setSheetExpanded}
         searchConfig={{
