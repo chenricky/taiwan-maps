@@ -10,6 +10,17 @@
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       }
+    },
+    {
+      "id": "bm-1788130967463",
+      "lat": 25.0569502933253,
+      "lng": 121.55447244644166,
+      "label": "b2",
+      "createdAt": "2026-08-30T23:02:47.463Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
     }
   ],
   "notes": [
@@ -63,5 +74,5 @@
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-30T23:02:44.365Z"
+  "updatedAt": "2026-08-30T23:02:47.588Z"
 }
