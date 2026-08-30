@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Bookmark, StickyNote, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
+import { Bookmark, StickyNote, TodayLocation, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
 import SearchBar from "@/components/SearchBar";
 import RoutingPanel from "@/components/RoutingPanel";
 import BookmarkModal from "@/components/BookmarkModal";
 import StickyNoteModal from "@/components/StickyNoteModal";
 import StickyNoteEditModal from "@/components/StickyNoteEditModal";
+import TodayLocationEditModal from "@/components/TodayLocationEditModal";
 import TodoPanel from "@/components/TodoPanel";
 import InviteManagerModal from "@/components/InviteManagerModal";
 import MapControlPanel from "@/components/MapControlPanel";
@@ -130,6 +131,37 @@ export default function Home() {
   // Bottom sheet expanded state — lifted here so the layer panel can react
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
+  // Which panel tabs (notes/bookmarks/layers) are shown — a per-device display
+  // preference, not app data, so it's persisted to localStorage rather than synced.
+  // Must start as DEFAULT_VISIBLE_TABS on both server and client-before-mount (the
+  // server has no localStorage), then apply the real stored value in an effect —
+  // reading it eagerly in a lazy useState initializer causes a hydration mismatch,
+  // since that initializer re-runs on the client with localStorage available while
+  // the server-rendered HTML reflects the default.
+  const DEFAULT_VISIBLE_TABS = { notes: true, bookmarks: true, today: true, layers: true };
+  const [visibleTabs, setVisibleTabs] = useState<Record<"notes" | "bookmarks" | "today" | "layers", boolean>>(DEFAULT_VISIBLE_TABS);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("visibleTabs");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional post-mount sync from localStorage, required to keep SSR/client hydration output identical
+      if (raw) setVisibleTabs({ ...DEFAULT_VISIBLE_TABS, ...JSON.parse(raw) });
+    } catch {
+      // Ignore malformed/inaccessible localStorage — fall back to all tabs visible.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- DEFAULT_VISIBLE_TABS is a stable literal, not state
+  }, []);
+
+  const handleToggleTabVisibility = useCallback((tab: "notes" | "bookmarks" | "today" | "layers") => {
+    setVisibleTabs((prev) => {
+      const next = { ...prev, [tab]: !prev[tab] };
+      // Never let every tab be hidden — the panel would have nothing to show.
+      if (!next.notes && !next.bookmarks && !next.today && !next.layers) return prev;
+      try { localStorage.setItem("visibleTabs", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
   // --vh: tracks window.innerHeight so the container always equals the
   // visible viewport, even after iOS URL-bar collapse fires a resize.
   useEffect(() => {
@@ -147,6 +179,9 @@ export default function Home() {
 
   // Edit existing sticky note
   const [editingNote, setEditingNote] = useState<StickyNote | null>(null);
+
+  // View/discuss an existing today's-location (opened by clicking its map pin or list card)
+  const [editingTodayLocation, setEditingTodayLocation] = useState<TodayLocation | null>(null);
 
   // Routing state
   const [routeStart, setRouteStart] = useState<RoutePoint | null>(null);
@@ -281,6 +316,49 @@ export default function Home() {
     [appData, saveData]
   );
 
+  // Today's-location handlers
+  const handleSaveTodayLocation = useCallback(
+    (label: string, timeStart?: string, timeEnd?: string) => {
+      if (!clickTarget) return;
+      const now = new Date();
+      const planDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const newLocation: TodayLocation = {
+        id: `today-${Date.now()}`,
+        lat: clickTarget.lat,
+        lng: clickTarget.lng,
+        label,
+        planDate,
+        ...(timeStart ? { timeStart } : {}),
+        ...(timeEnd ? { timeEnd } : {}),
+        createdAt: now.toISOString(),
+        createdBy: userEmail
+          ? { name: userName ?? userEmail.split("@")[0], email: userEmail }
+          : undefined,
+        comments: [],
+      };
+      saveData({ ...appData, todayLocations: [...appData.todayLocations, newLocation] });
+      setShowBookmarkModal(false);
+      setClickTarget(null);
+    },
+    [clickTarget, appData, saveData, userEmail, userName]
+  );
+
+  // Open the discussion modal for a today's-location clicked directly on the map
+  const handleTodayLocationClick = useCallback((loc: TodayLocation) => {
+    setEditingTodayLocation(loc);
+  }, []);
+
+  const handleDeleteTodayLocation = useCallback(
+    (id: string) => {
+      saveData({
+        ...appData,
+        todayLocations: appData.todayLocations.filter((l) => l.id !== id),
+      });
+      setEditingTodayLocation(null);
+    },
+    [appData, saveData]
+  );
+
   // Routing handler
   const handleRoute = useCallback(
     async (start: RoutePoint, end: RoutePoint, mode: TravelMode) => {
@@ -359,6 +437,13 @@ export default function Home() {
     setFlyToNoteTarget({ lat: note.lat, lng: note.lng, key: flyToNoteKeyRef.current });
     setShowNotes(true);   // ensure the notes layer is visible before flying to it
     setEditingNote(note); // open the note's edit/read modal on arrival
+  }, []);
+
+  // Fly-to + open the discussion modal for a today's-location selected from a list card
+  const handleSelectTodayLocation = useCallback((loc: TodayLocation) => {
+    flyToNoteKeyRef.current += 1;
+    setFlyToNoteTarget({ lat: loc.lat, lng: loc.lng, key: flyToNoteKeyRef.current });
+    setEditingTodayLocation(loc);
   }, []);
 
   if (isLoading) {
@@ -497,8 +582,10 @@ export default function Home() {
           <MapComponent
             bookmarks={appData.bookmarks}
             stickyNotes={appData.stickyNotes}
+            todayLocations={appData.todayLocations}
             onMapClick={handleMapClick}
             onNoteClick={handleNoteClick}
+            onTodayLocationClick={handleTodayLocationClick}
             routeStart={routeStart}
             routeEnd={routeEnd}
             routeCoords={routeCoords}
@@ -514,6 +601,8 @@ export default function Home() {
             flyToTarget={flyToTarget}
             flyToNoteTarget={flyToNoteTarget}
             sheetExpanded={sheetExpanded}
+            visibleTabs={visibleTabs}
+            onToggleTab={handleToggleTabVisibility}
           />
 
           {/* ── Combined desktop panel: bookmarks + sticky notes + layers in one tabbed pane ── */}
@@ -521,6 +610,7 @@ export default function Home() {
           <MapControlPanel
             notes={appData.stickyNotes}
             bookmarks={appData.bookmarks}
+            todayLocations={appData.todayLocations}
             layers={LAYER_TOGGLES.map(l => ({
               ...l,
               active:   layerActive[l.key],
@@ -529,6 +619,8 @@ export default function Home() {
             onSelectNote={handleSelectNote}
             onSelectBookmark={handleSelectBookmark}
             onDeleteBookmark={handleDeleteBookmark}
+            onSelectTodayLocation={handleSelectTodayLocation}
+            visibleTabs={visibleTabs}
           />
         </div>
         {/* ── End map area ──────────────────────────────────────────────────── */}
@@ -558,6 +650,7 @@ export default function Home() {
           lng={clickTarget.lng}
           onSave={handleSaveBookmark}
           onAddNote={handleOpenNoteModal}
+          onSaveToday={handleSaveTodayLocation}
           onClose={() => {
             setShowBookmarkModal(false);
             setClickTarget(null);
@@ -590,6 +683,18 @@ export default function Home() {
         />
       )}
 
+      {/* View/discuss a today's-location — opened by clicking its pin or list card */}
+      {editingTodayLocation && (
+        <TodayLocationEditModal
+          location={editingTodayLocation}
+          onDelete={handleDeleteTodayLocation}
+          onClose={() => {
+            setEditingTodayLocation(null);
+            refreshData();
+          }}
+        />
+      )}
+
       {/* ── Admin: Invite Manager Modal ─────────────────────────────────────── */}
       {showInviteModal && isAdmin && (
         <InviteManagerModal
@@ -603,6 +708,7 @@ export default function Home() {
       <MobileBottomSheet
         notes={appData.stickyNotes}
         bookmarks={appData.bookmarks}
+        todayLocations={appData.todayLocations}
         layers={LAYER_TOGGLES.map(l => ({
           ...l,
           active:   layerActive[l.key],
@@ -611,6 +717,8 @@ export default function Home() {
         onSelectNote={handleSelectNote}
         onSelectBookmark={handleSelectBookmark}
         onDeleteBookmark={handleDeleteBookmark}
+        onSelectTodayLocation={handleSelectTodayLocation}
+        visibleTabs={visibleTabs}
         expanded={sheetExpanded}
         onExpandedChange={setSheetExpanded}
         searchConfig={{

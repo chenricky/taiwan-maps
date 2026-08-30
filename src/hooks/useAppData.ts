@@ -7,11 +7,12 @@ import { AppData } from "@/types";
 const STORAGE_URL = "/api/storage";
 
 const EMPTY: AppData = {
-  bookmarks:    [],
-  stickyNotes:  [],
-  todos:        [],
-  invitedUsers: [],
-  updatedAt:    "",
+  bookmarks:      [],
+  stickyNotes:    [],
+  todayLocations: [],
+  todos:          [],
+  invitedUsers:   [],
+  updatedAt:      "",
 };
 
 async function fetcher([url]: [string, string | null]): Promise<AppData> {
@@ -28,11 +29,12 @@ async function fetcher([url]: [string, string | null]): Promise<AppData> {
   }
 
   return {
-    bookmarks:    Array.isArray(raw.bookmarks)    ? (raw.bookmarks    as AppData["bookmarks"])    : [],
-    stickyNotes:  Array.isArray(raw.stickyNotes)  ? (raw.stickyNotes  as AppData["stickyNotes"])  : [],
-    todos:        Array.isArray(raw.todos)         ? (raw.todos        as AppData["todos"])        : [],
-    invitedUsers: Array.isArray(raw.invitedUsers) ? (raw.invitedUsers as AppData["invitedUsers"]) : [],
-    updatedAt:    typeof raw.updatedAt === "string" ? raw.updatedAt : new Date().toISOString(),
+    bookmarks:      Array.isArray(raw.bookmarks)      ? (raw.bookmarks      as AppData["bookmarks"])      : [],
+    stickyNotes:    Array.isArray(raw.stickyNotes)    ? (raw.stickyNotes    as AppData["stickyNotes"])    : [],
+    todayLocations: Array.isArray(raw.todayLocations) ? (raw.todayLocations as AppData["todayLocations"]) : [],
+    todos:          Array.isArray(raw.todos)          ? (raw.todos          as AppData["todos"])          : [],
+    invitedUsers:   Array.isArray(raw.invitedUsers)   ? (raw.invitedUsers   as AppData["invitedUsers"])   : [],
+    updatedAt:      typeof raw.updatedAt === "string" ? raw.updatedAt : new Date().toISOString(),
   };
 }
 

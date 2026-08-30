@@ -38,6 +38,24 @@ export interface StickyNote {
   comments:  NoteComment[];
 }
 
+// ── Today's Location (a planned stop, shared with the family circle) ───────
+export interface TodayLocation {
+  id:        string;
+  lat:       number;
+  lng:       number;
+  label:     string;
+  /** "YYYY-MM-DD" — which day this plan is for; defaults to the day it was created */
+  planDate:  string;
+  /** "HH:MM" 24h, both optional — a rough window, not a precise commitment */
+  timeStart?: string;
+  timeEnd?:   string;
+  createdAt: string;
+  /** Optional — guests can't create these, but tolerate missing data defensively like the other types */
+  createdBy?: NoteAuthor;
+  /** Discussion thread — same shape as sticky notes, defaults to [] */
+  comments:  NoteComment[];
+}
+
 // ── Todo Item ──────────────────────────────────────────────────────────────
 export interface TodoItem {
   id:                  string;
@@ -51,12 +69,13 @@ export interface TodoItem {
 }
 
 export interface AppData {
-  bookmarks:    Bookmark[];
-  stickyNotes:  StickyNote[];
-  todos:        TodoItem[];
-  updatedAt:    string;
+  bookmarks:      Bookmark[];
+  stickyNotes:    StickyNote[];
+  todayLocations: TodayLocation[];
+  todos:          TodoItem[];
+  updatedAt:      string;
   /** Whitelist of Google emails allowed to sign in (admin-managed) */
-  invitedUsers: string[];
+  invitedUsers:   string[];
 }
 
 export interface RoutePoint {

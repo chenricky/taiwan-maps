@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { StickyNote, Bookmark } from "@/types";
+import { StickyNote, Bookmark, TodayLocation } from "@/types";
 import MobileSearchStrip, { SearchConfig } from "@/components/MobileSearchStrip";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -14,6 +14,20 @@ function timeAgo(iso: string): string {
   const days = Math.floor(secs / 86400);
   if (days < 30)    return `${days} 天前`;
   return new Date(iso).toLocaleDateString("zh-TW", { month: "short", day: "numeric" });
+}
+
+// Local (not UTC) "YYYY-MM-DD" — matches how TodayLocation.planDate is stamped on save.
+function todayDateStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// "14:00" -> "2:00 PM"
+function formatTime(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  const period = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 const AVATAR_PALETTE = [
@@ -48,11 +62,12 @@ export interface LayerItem {
   onToggle:     () => void;
 }
 
-type Tab = "notes" | "bookmarks" | "layers";
+type Tab = "notes" | "bookmarks" | "today" | "layers";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "notes",     label: "📝 便利貼" },
   { key: "bookmarks", label: "📌 書籤"   },
+  { key: "today",     label: "📅 今日"   },
   { key: "layers",    label: "🗂️ 圖層"   },
 ];
 
@@ -65,10 +80,14 @@ const SHEET_VH  = "72vh";
 interface Props {
   notes:            StickyNote[];
   bookmarks:        Bookmark[];
+  todayLocations:   TodayLocation[];
   layers:           LayerItem[];
   onSelectNote:     (note: StickyNote) => void;
   onSelectBookmark: (bm: Bookmark)     => void;
   onDeleteBookmark: (id: string)       => void;
+  onSelectTodayLocation: (loc: TodayLocation) => void;
+  /** Which tabs to show — controlled by the gear-icon settings popover on the map */
+  visibleTabs:      Record<Tab, boolean>;
   /** Lifted to page.tsx so the layer panel can react to expansion */
   expanded:         boolean;
   onExpandedChange: (v: boolean) => void;
@@ -102,8 +121,9 @@ function TrashIcon() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function MobileBottomSheet({
-  notes, bookmarks, layers,
-  onSelectNote, onSelectBookmark, onDeleteBookmark,
+  notes, bookmarks, todayLocations, layers,
+  onSelectNote, onSelectBookmark, onDeleteBookmark, onSelectTodayLocation,
+  visibleTabs,
   expanded, onExpandedChange,
   searchConfig,
 }: Props) {
@@ -113,9 +133,22 @@ export default function MobileBottomSheet({
   // whatever now occupies that spot instead of its intended target.
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const visibleTabList = TABS.filter((t) => visibleTabs[t.key]);
+
+  // If the stored activeTab gets hidden via the settings popover, fall back to the
+  // first still-visible tab. Derived at render time (not via effect+setState) so
+  // there's no stale-tab flash, and `activeTab` naturally becomes valid again on
+  // its own if the user re-enables that tab later.
+  const effectiveTab: Tab | undefined = visibleTabs[activeTab] ? activeTab : visibleTabList[0]?.key;
+
   const sortedNotes = [...notes].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const todayStr = todayDateStr();
+  const todaysLocations = todayLocations
+    .filter((loc) => loc.planDate === todayStr)
+    .sort((a, b) => (a.timeStart ?? "99:99").localeCompare(b.timeStart ?? "99:99"));
 
   const handleDeleteBookmarkClick = (id: string) => {
     if (deletingId) return;
@@ -133,6 +166,11 @@ export default function MobileBottomSheet({
 
   const handleBookmarkClick = (bm: Bookmark) => {
     onSelectBookmark(bm);
+    onExpandedChange(false);
+  };
+
+  const handleTodayLocationClick = (loc: TodayLocation) => {
+    onSelectTodayLocation(loc);
     onExpandedChange(false);
   };
 
@@ -197,14 +235,18 @@ export default function MobileBottomSheet({
           {/* Drag indicator pill */}
           <span className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-gray-400/60 rounded-full" />
 
-          {/* Compact counts — three data points in one line */}
-          <div className="flex items-center gap-2.5 flex-1 min-w-0 mt-1">
+          {/* Compact counts — four data points in one line */}
+          <div className="flex items-center gap-2.5 flex-1 min-w-0 mt-1 overflow-x-auto">
             <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">
               📝 {notes.length}
             </span>
             <span className="text-gray-300 text-xs">·</span>
             <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">
               📌 {bookmarks.length}
+            </span>
+            <span className="text-gray-300 text-xs">·</span>
+            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">
+              📅 {todaysLocations.length}
             </span>
             <span className="text-gray-300 text-xs">·</span>
             <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">
@@ -227,11 +269,12 @@ export default function MobileBottomSheet({
 
           {/* ── Tab bar ── */}
           <div className="shrink-0 flex border-b border-gray-100/90">
-            {TABS.map(tab => {
-              const isActive = activeTab === tab.key;
+            {visibleTabList.map(tab => {
+              const isActive = effectiveTab === tab.key;
               const accentClass = isActive
                 ? tab.key === "notes"     ? "text-amber-600 border-b-2 border-amber-500"
                 : tab.key === "bookmarks" ? "text-blue-600 border-b-2 border-blue-500"
+                : tab.key === "today"     ? "text-emerald-600 border-b-2 border-emerald-500"
                 :                           "text-slate-700 border-b-2 border-slate-500"
                 : "text-gray-400";
               return (
@@ -250,7 +293,7 @@ export default function MobileBottomSheet({
           <div className="flex-1 min-h-0 overflow-y-auto">
 
             {/* Notes */}
-            {activeTab === "notes" && (
+            {effectiveTab === "notes" && (
               sortedNotes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6 py-10">
                   <span className="text-4xl mb-3 select-none opacity-40">📝</span>
@@ -307,7 +350,7 @@ export default function MobileBottomSheet({
             )}
 
             {/* Bookmarks */}
-            {activeTab === "bookmarks" && (
+            {effectiveTab === "bookmarks" && (
               bookmarks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6 py-10">
                   <span className="text-4xl mb-3 select-none opacity-40">📌</span>
@@ -355,8 +398,71 @@ export default function MobileBottomSheet({
               )
             )}
 
+            {/* Today's Locations */}
+            {effectiveTab === "today" && (
+              todaysLocations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center px-6 py-10">
+                  <span className="text-4xl mb-3 select-none opacity-40">📅</span>
+                  <p className="text-sm font-semibold text-gray-500">今天還沒有安排地點</p>
+                  <p className="text-xs mt-1.5 text-gray-400 leading-relaxed">
+                    點擊地圖並選擇「新增今日行程」
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-100/90">
+                  {todaysLocations.map(loc => {
+                    const author       = loc.createdBy?.name ?? "匿名";
+                    const commentCount = loc.comments?.length ?? 0;
+                    const timeWindow   = loc.timeStart
+                      ? `${formatTime(loc.timeStart)}${loc.timeEnd ? ` – ${formatTime(loc.timeEnd)}` : ""}`
+                      : null;
+                    return (
+                      <li
+                        key={loc.id}
+                        role="button" tabIndex={0}
+                        onClick={() => handleTodayLocationClick(loc)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleTodayLocationClick(loc); }}
+                        className="flex items-start gap-3 px-4 py-3.5 active:bg-emerald-50/80 cursor-pointer
+                                   focus:outline-none focus-visible:bg-emerald-50"
+                      >
+                        <div
+                          className={`shrink-0 w-9 h-9 rounded-full ${avatarColor(author)}
+                                      flex items-center justify-center text-white text-xs font-bold leading-none shadow-sm`}
+                          title={author}
+                        >
+                          {nameInitials(author)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                            <span className="text-sm font-semibold text-gray-800 truncate">{loc.label}</span>
+                            <span className="text-[11px] text-gray-400 shrink-0 tabular-nums">
+                              {timeAgo(loc.createdAt)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs text-gray-500">by {author}</span>
+                            {timeWindow && (
+                              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                🕐 {timeWindow}
+                              </span>
+                            )}
+                          </div>
+                          {commentCount > 0 && (
+                            <span className="text-[11px] text-blue-500 font-medium mt-0.5 block">
+                              💬 {commentCount} 則留言
+                            </span>
+                          )}
+                        </div>
+                        <div className="shrink-0 self-center text-gray-300"><FlyIcon /></div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            )}
+
             {/* Layers */}
-            {activeTab === "layers" && (
+            {effectiveTab === "layers" && (
               <div className="p-3">
                 <div className="grid grid-cols-2 gap-2">
                   {layers.map(layer => (

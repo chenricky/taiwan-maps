@@ -45,11 +45,12 @@ export async function GET() {
 
     // ── 3. Validate shape before returning ────────────────────────────────
     const safeData: AppData = {
-      bookmarks:    Array.isArray(data.bookmarks)    ? data.bookmarks    : [],
-      stickyNotes:  Array.isArray(data.stickyNotes)  ? data.stickyNotes  : [],
-      todos:        Array.isArray(data.todos)         ? data.todos        : [],
-      invitedUsers: Array.isArray(data.invitedUsers) ? data.invitedUsers : ["chenricky@gmail.com"],
-      updatedAt:    data.updatedAt ?? new Date().toISOString(),
+      bookmarks:      Array.isArray(data.bookmarks)      ? data.bookmarks      : [],
+      stickyNotes:    Array.isArray(data.stickyNotes)    ? data.stickyNotes    : [],
+      todayLocations: Array.isArray(data.todayLocations) ? data.todayLocations : [],
+      todos:          Array.isArray(data.todos)          ? data.todos          : [],
+      invitedUsers:   Array.isArray(data.invitedUsers)   ? data.invitedUsers   : ["chenricky@gmail.com"],
+      updatedAt:      data.updatedAt ?? new Date().toISOString(),
     };
 
     return NextResponse.json(safeData, {
@@ -64,7 +65,7 @@ export async function GET() {
     console.error("[API CRASH LOG]: unhandled exception in GET /api/storage:", error);
     const def = getDefaultAppData();
     return NextResponse.json(
-      { bookmarks: def.bookmarks, todos: def.todos, stickyNotes: def.stickyNotes, notes: [], error: String(error) },
+      { bookmarks: def.bookmarks, todos: def.todos, stickyNotes: def.stickyNotes, todayLocations: def.todayLocations, notes: [], error: String(error) },
       { status: 200 }
     );
   }
@@ -123,6 +124,14 @@ export async function POST(request: Request) {
             ...n,
             comments: Array.isArray(n.comments) ? n.comments : [],
             createdBy: n.createdBy ?? createdByField,
+          }))
+        : [],
+
+      todayLocations: Array.isArray(body.todayLocations)
+        ? body.todayLocations.map((loc) => ({
+            ...loc,
+            comments: Array.isArray(loc.comments) ? loc.comments : [],
+            createdBy: loc.createdBy ?? createdByField,
           }))
         : [],
 

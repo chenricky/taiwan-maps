@@ -13,7 +13,7 @@
  * on read and write so the rest of the app is unchanged.
  */
 
-import { AppData, Bookmark, StickyNote, TodoItem } from "@/types";
+import { AppData, Bookmark, StickyNote, TodayLocation, TodoItem, NoteComment } from "@/types";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN  || "";
 const REPO_OWNER   = process.env.GITHUB_USERNAME || process.env.REPO_OWNER || "";
@@ -46,22 +46,63 @@ function githubApiUrl(filePath: string): string {
 
 // ── Flat on-disk schema ────────────────────────────────────────────────────
 interface FlatStorageSchema {
-  bookmarks:    Bookmark[];
-  notes:        StickyNote[];
-  todos:        TodoItem[];
-  invitedUsers: string[];
-  updatedAt?:   string;
+  bookmarks:      Bookmark[];
+  notes:          StickyNote[];
+  todayLocations: TodayLocation[];
+  todos:          TodoItem[];
+  invitedUsers:   string[];
+  updatedAt?:     string;
 }
 
 const ADMIN_EMAIL = "chenricky@gmail.com";
 
+// Shared by stickyNotes and todayLocations — both carry the same comment-thread shape.
+function parseComments(raw: unknown): NoteComment[] {
+  return Array.isArray(raw)
+    ? raw.map((c) => {
+        try {
+          const cObj = c && typeof c === "object" ? c as Record<string, unknown> : {};
+          const cCB  = cObj["createdBy"] && typeof cObj["createdBy"] === "object"
+            ? cObj["createdBy"] as Record<string, unknown>
+            : null;
+          return {
+            id:        typeof cObj["id"] === "string" && cObj["id"] ? String(cObj["id"]) : `cmt-legacy-${Math.random().toString(36).slice(2)}`,
+            text:      typeof cObj["text"] === "string"             ? String(cObj["text"])      : "",
+            createdAt: typeof cObj["createdAt"] === "string"        ? String(cObj["createdAt"]) : new Date().toISOString(),
+            createdBy: {
+              name:  String(cCB?.["name"]  || "匿名"),
+              email: String(cCB?.["email"] || "unknown"),
+            },
+          };
+        } catch (cErr) {
+          console.error("[API CRASH LOG]: parseComments comment parse error:", cErr, c);
+          return {
+            id:        `cmt-err-${Math.random().toString(36).slice(2)}`,
+            text:      "",
+            createdAt: new Date().toISOString(),
+            createdBy: { name: "匿名", email: "unknown" },
+          };
+        }
+      })
+    : [];
+}
+
+// Shared by bookmarks/stickyNotes/todayLocations — always a valid object or undefined.
+function parseCreatedBy(raw: unknown): { name: string; email: string } | undefined {
+  const cbObj = raw && typeof raw === "object" ? raw as Record<string, unknown> : null;
+  return cbObj
+    ? { name: String(cbObj["name"] || "系統管理員"), email: String(cbObj["email"] || "system") }
+    : undefined;
+}
+
 function toFlat(data: AppData): FlatStorageSchema {
   return {
-    bookmarks:    data.bookmarks    ?? [],
-    notes:        data.stickyNotes  ?? [],
-    todos:        data.todos        ?? [],
-    invitedUsers: data.invitedUsers ?? [ADMIN_EMAIL],
-    updatedAt:    data.updatedAt,
+    bookmarks:      data.bookmarks      ?? [],
+    notes:          data.stickyNotes    ?? [],
+    todayLocations: data.todayLocations ?? [],
+    todos:          data.todos          ?? [],
+    invitedUsers:   data.invitedUsers   ?? [ADMIN_EMAIL],
+    updatedAt:      data.updatedAt,
   };
 }
 
@@ -161,6 +202,36 @@ function fromFlat(flat: FlatStorageSchema): AppData {
     }
   });
 
+  // ── Today's Locations ───────────────────────────────────────────────────
+  const todayLocations = (Array.isArray(flat.todayLocations) ? flat.todayLocations : []).map((loc) => {
+    try {
+      const locAny = loc as unknown as Record<string, unknown>;
+      return {
+        id:        typeof loc.id === "string" && loc.id       ? loc.id       : `today-legacy-${Math.random().toString(36).slice(2)}`,
+        lat:       typeof loc.lat === "number"                ? loc.lat      : 0,
+        lng:       typeof loc.lng === "number"                ? loc.lng      : 0,
+        label:     typeof loc.label === "string" && loc.label ? loc.label    : "未命名地點",
+        planDate:  typeof loc.planDate === "string" && loc.planDate ? loc.planDate : new Date().toISOString().slice(0, 10),
+        ...(typeof locAny["timeStart"] === "string" ? { timeStart: locAny["timeStart"] as string } : {}),
+        ...(typeof locAny["timeEnd"]   === "string" ? { timeEnd:   locAny["timeEnd"]   as string } : {}),
+        createdAt: typeof loc.createdAt === "string"          ? loc.createdAt : new Date().toISOString(),
+        comments:  parseComments(locAny["comments"]),
+        ...(parseCreatedBy(locAny["createdBy"]) ? { createdBy: parseCreatedBy(locAny["createdBy"]) } : {}),
+      };
+    } catch (locErr) {
+      console.error("[API CRASH LOG]: fromFlat todayLocation parse error:", locErr, loc);
+      return {
+        id:        `today-err-${Math.random().toString(36).slice(2)}`,
+        lat:       0,
+        lng:       0,
+        label:     "未命名地點",
+        planDate:  new Date().toISOString().slice(0, 10),
+        createdAt: new Date().toISOString(),
+        comments:  [],
+      };
+    }
+  });
+
   // ── Todos ────────────────────────────────────────────────────────────────
   const todos = (Array.isArray(flat.todos) ? flat.todos : []).map((t) => {
     try {
@@ -204,7 +275,7 @@ function fromFlat(flat: FlatStorageSchema): AppData {
     invitedUsers.unshift(ADMIN_EMAIL);
   }
 
-  return { bookmarks, stickyNotes, todos, invitedUsers, updatedAt: flat.updatedAt ?? new Date().toISOString() };
+  return { bookmarks, stickyNotes, todayLocations, todos, invitedUsers, updatedAt: flat.updatedAt ?? new Date().toISOString() };
 }
 
 // ── Per-user in-process cache ──────────────────────────────────────────────
@@ -214,11 +285,12 @@ const shaCache  = new Map<string, string>();
 
 export function getDefaultAppData(): AppData {
   return {
-    bookmarks:    [],
-    stickyNotes:  [],
-    todos:        [],
-    invitedUsers: [ADMIN_EMAIL],
-    updatedAt:    new Date().toISOString(),
+    bookmarks:      [],
+    stickyNotes:    [],
+    todayLocations: [],
+    todos:          [],
+    invitedUsers:   [ADMIN_EMAIL],
+    updatedAt:      new Date().toISOString(),
   };
 }
 
@@ -288,11 +360,12 @@ export async function fetchAppData(email?: string | null): Promise<AppData> {
     // Tolerate files saved with the old schema (had stickyNotes key)
     const flatAny = (flat as unknown) as Record<string, unknown>;
     const normalised: FlatStorageSchema = {
-      bookmarks:    flat.bookmarks    ?? (flatAny["bookmarks"] as Bookmark[])    ?? [],
-      notes:        flat.notes        ?? (flatAny["stickyNotes"] as StickyNote[]) ?? [],
-      todos:        flat.todos        ?? [],
-      invitedUsers: flat.invitedUsers ?? (flatAny["invitedUsers"] as string[])   ?? [ADMIN_EMAIL],
-      updatedAt:    flat.updatedAt    ?? (flatAny["updatedAt"] as string | undefined),
+      bookmarks:      flat.bookmarks      ?? (flatAny["bookmarks"] as Bookmark[])         ?? [],
+      notes:          flat.notes          ?? (flatAny["stickyNotes"] as StickyNote[])      ?? [],
+      todayLocations: flat.todayLocations ?? (flatAny["todayLocations"] as TodayLocation[]) ?? [],
+      todos:          flat.todos          ?? [],
+      invitedUsers:   flat.invitedUsers   ?? (flatAny["invitedUsers"] as string[])         ?? [ADMIN_EMAIL],
+      updatedAt:      flat.updatedAt      ?? (flatAny["updatedAt"] as string | undefined),
     };
 
     let appData: AppData;

@@ -16,6 +16,7 @@ import "leaflet/dist/leaflet.css";
 import {
   Bookmark,
   StickyNote,
+  TodayLocation,
   RoutePoint,
   SearchResult,
 } from "@/types";
@@ -51,6 +52,22 @@ const customIcon = new L.DivIcon({
   popupAnchor: [0, -32],
 });
 
+// Local (not UTC) "YYYY-MM-DD" — matches how TodayLocation.planDate is stamped on save.
+function todayDateStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Today's-location pins stay compact (not the big sticky-note box) since they're more
+// numerous/transient than curated notes — clicking opens the discussion modal directly.
+const todayIcon = new L.DivIcon({
+  className: "today-location-marker",
+  html: `<div style="background:#059669;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:15px;cursor:pointer;">📅</div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
 const routeIcons = {
   start: L.divIcon({
     className: "route-marker-start",
@@ -75,8 +92,10 @@ interface NoteTarget {
 interface MapComponentProps {
   bookmarks: Bookmark[];
   stickyNotes: StickyNote[];
+  todayLocations: TodayLocation[];
   onMapClick: (lat: number, lng: number) => void;
   onNoteClick?: (note: StickyNote) => void;
+  onTodayLocationClick?: (loc: TodayLocation) => void;
   onBookmarkSelect?: (bookmark: Bookmark) => void;
   routeStart: RoutePoint | null;
   routeEnd: RoutePoint | null;
@@ -94,7 +113,19 @@ interface MapComponentProps {
   flyToNoteTarget?: NoteTarget | null;
   /** Whether the mobile bottom sheet is expanded — hides the locate-me FAB so it doesn't float over the sheet content. */
   sheetExpanded?: boolean;
+  /** Which panel tabs (notes/bookmarks/today/layers) are currently shown — drives the settings popover's checkboxes. */
+  visibleTabs?: Record<PanelTab, boolean>;
+  onToggleTab?: (tab: PanelTab) => void;
 }
+
+type PanelTab = "notes" | "bookmarks" | "today" | "layers";
+
+const SETTINGS_TABS: { key: PanelTab; label: string }[] = [
+  { key: "notes",     label: "📝 便利貼" },
+  { key: "bookmarks", label: "📌 書籤"   },
+  { key: "today",     label: "📅 今日"   },
+  { key: "layers",    label: "🗂️ 圖層"   },
+];
 
 function MapController({
   searchResult,
@@ -158,8 +189,10 @@ function ClickHandler({
 export default function MapComponent({
   bookmarks,
   stickyNotes,
+  todayLocations,
   onMapClick,
   onNoteClick,
+  onTodayLocationClick,
   routeStart,
   routeEnd,
   routeCoords,
@@ -175,10 +208,13 @@ export default function MapComponent({
   flyToTarget,
   flyToNoteTarget,
   sheetExpanded = false,
+  visibleTabs = { notes: true, bookmarks: true, today: true, layers: true },
+  onToggleTab,
 }: MapComponentProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   );
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
 
   // Tracks whether we're below Tailwind's `md` breakpoint (768px) — determines
@@ -303,6 +339,23 @@ export default function MapComponent({
             />
           ))}
 
+        {/* Today's Locations — only today's plans are shown as live pins; click opens the discussion modal */}
+        {todayLocations
+          .filter((loc) => loc.planDate === todayDateStr())
+          .map((loc) => (
+            <Marker
+              key={loc.id}
+              position={[loc.lat, loc.lng]}
+              icon={todayIcon}
+              eventHandlers={{
+                click: (e) => {
+                  e.originalEvent?.stopPropagation();
+                  onTodayLocationClick?.(loc);
+                },
+              }}
+            />
+          ))}
+
         {/* Route markers */}
         {routeStart && (
           <Marker position={[routeStart.lat, routeStart.lng]} icon={routeIcons.start} />
@@ -333,6 +386,55 @@ export default function MapComponent({
           ${isMobile ? "z-[2001]" : "z-[1000]"}
           ${sheetExpanded ? "hidden md:flex" : "flex"}`}
       >
+        {/* Panel-tab visibility settings — opens above the locate-me button */}
+        <div className="relative">
+          <button
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="bg-white p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+            title="顯示設定"
+            aria-label="顯示設定"
+            aria-expanded={settingsOpen}
+          >
+            <svg
+              className="h-5 w-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+
+          {settingsOpen && (
+            <>
+              {/* Tap-away dismiss layer */}
+              <div className="fixed inset-0 z-0" onClick={() => setSettingsOpen(false)} />
+              <div className="absolute bottom-full right-0 mb-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-10">
+                <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 border-b border-gray-100 whitespace-nowrap">
+                  顯示分頁
+                </div>
+                {SETTINGS_TABS.map((tab) => (
+                  <label
+                    key={tab.key}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleTabs[tab.key]}
+                      onChange={() => onToggleTab?.(tab.key)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    {tab.label}
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
         <button
           onClick={handleLocateMe}
           className="bg-white p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
