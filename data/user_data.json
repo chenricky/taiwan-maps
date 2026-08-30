@@ -70,9 +70,25 @@
       }
     }
   ],
+  "todayLocations": [
+    {
+      "id": "today-1788134215674",
+      "lat": 25.116844273019122,
+      "lng": 121.53016090393068,
+      "label": "shopping here",
+      "planDate": "2026-08-30",
+      "timeStart": "15:56",
+      "createdAt": "2026-08-30T23:56:55.674Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      },
+      "comments": []
+    }
+  ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-30T23:02:47.588Z"
+  "updatedAt": "2026-08-30T23:56:55.854Z"
 }
