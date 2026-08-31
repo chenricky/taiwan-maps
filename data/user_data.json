@@ -79,11 +79,21 @@
       "planDate": "2026-08-30",
       "timeStart": "15:56",
       "createdAt": "2026-08-30T23:56:55.674Z",
+      "comments": [
+        {
+          "id": "cmt-1788134476159-yk78o",
+          "text": "htyyhbrh",
+          "createdAt": "2026-08-31T00:01:16.159Z",
+          "createdBy": {
+            "name": "Ricky Chen",
+            "email": "chenricky@gmail.com"
+          }
+        }
+      ],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     },
     {
       "id": "today-1788134283957",
@@ -94,11 +104,11 @@
       "timeStart": "16:57",
       "timeEnd": "18:58",
       "createdAt": "2026-08-30T23:58:03.957Z",
+      "comments": [],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     },
     {
       "id": "today-1788134442189",
@@ -109,16 +119,16 @@
       "timeStart": "17:00",
       "timeEnd": "20:00",
       "createdAt": "2026-08-31T00:00:42.189Z",
+      "comments": [],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     }
   ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-31T00:00:42.371Z"
+  "updatedAt": "2026-08-31T00:01:16.159Z"
 }
