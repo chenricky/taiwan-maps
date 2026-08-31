@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   StickyNote as StickyNoteIcon,
   Bookmark as BookmarkIcon,
@@ -85,11 +85,10 @@ const TABS: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "layers",    label: "圖層",   icon: Layers         },
 ];
 
-// STRIP_PX: height of the search/auth bar sitting above the handle
-const STRIP_PX  = 60;
-// HANDLE_PX: height of the drag-pill + summary row
-const HANDLE_PX = 56;
-const SHEET_VH  = "72vh";
+// Fallback peek height (search strip + handle) for the very first paint, before the
+// ResizeObserver below has measured the real thing — refined immediately on mount.
+const PEEK_PX_FALLBACK = 116;
+const SHEET_VH = "72vh";
 
 interface Props {
   notes:            StickyNote[];
@@ -119,6 +118,23 @@ export default function MobileBottomSheet({
   searchConfig,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("notes");
+
+  // Measure the real rendered height of the "peek" region (search strip + handle)
+  // instead of hardcoding it — its true height depends on font metrics, safe-area
+  // insets, and content, all of which drift as the design changes. A stale hardcoded
+  // guess made the collapsed sheet peek too far and crop into the tab bar below.
+  const peekRef = useRef<HTMLDivElement>(null);
+  const [peekPx, setPeekPx] = useState(PEEK_PX_FALLBACK);
+  useLayoutEffect(() => {
+    const el = peekRef.current;
+    if (!el) return;
+    const measure = () => setPeekPx(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Guards against a fast double-tap: once a delete is in flight the list is about to
   // shift (the removed row disappears), so a near-simultaneous second tap could land on
   // whatever now occupies that spot instead of its intended target.
@@ -196,60 +212,64 @@ export default function MobileBottomSheet({
           height: SHEET_VH,
           transform: expanded
             ? "translateY(0)"
-            : `translateY(calc(${SHEET_VH} - ${STRIP_PX + HANDLE_PX + 16}px - env(safe-area-inset-bottom, 0px) - 0.5rem))`,
+            : `translateY(calc(${SHEET_VH} - ${peekPx}px))`,
         }}
       >
 
-        {/* ── Search strip — always visible, docked above the handle ── */}
-        <MobileSearchStrip {...searchConfig} />
+        {/* ── Peek region — search strip + handle, its real height drives the collapsed offset above ── */}
+        <div ref={peekRef} className="shrink-0">
+          {/* ── Search strip — always visible, docked above the handle ── */}
+          <MobileSearchStrip {...searchConfig} />
 
-        {/* ── Handle / collapsed pill ── */}
-        <div
-          role="button"
-          aria-expanded={expanded}
-          aria-label={expanded ? "收起面板" : "展開便利貼、書籤與圖層"}
-          tabIndex={0}
-          className="relative shrink-0 flex items-center px-4 cursor-pointer select-none
-                     active:bg-white/30 rounded-t-2xl transition-colors
-                     focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
-          style={{
-            // The pb absorbs the safe-area gap so the pill content stays centred
-            // above the home indicator, while the transform accounts for it.
-            paddingTop:    12,
-            paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 0.5rem)`,
-          }}
-          onClick={() => onExpandedChange(!expanded)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") onExpandedChange(!expanded);
-          }}
-        >
-          {/* Drag indicator pill */}
-          <span className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-slate-400/60 rounded-full" />
+          {/* ── Handle / collapsed pill ── */}
+          <div
+            role="button"
+            aria-expanded={expanded}
+            aria-label={expanded ? "收起面板" : "展開便利貼、書籤與圖層"}
+            tabIndex={0}
+            className="relative flex items-center px-4 cursor-pointer select-none
+                       active:bg-white/30 rounded-t-2xl transition-colors
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+            style={{
+              // The pb absorbs the safe-area gap so the pill content stays centred
+              // above the home indicator, while the peek measurement (offsetHeight)
+              // captures the true rendered height including this padding.
+              paddingTop:    12,
+              paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 0.5rem)`,
+            }}
+            onClick={() => onExpandedChange(!expanded)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") onExpandedChange(!expanded);
+            }}
+          >
+            {/* Drag indicator pill */}
+            <span className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-slate-400/60 rounded-full" />
 
-          {/* Compact counts — four data points in one line */}
-          <div className="flex items-center gap-2.5 flex-1 min-w-0 mt-1 overflow-x-auto">
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
-              <StickyNoteIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{notes.length}
-            </span>
-            <span className="text-slate-300 text-xs">·</span>
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
-              <BookmarkIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{bookmarks.length}
-            </span>
-            <span className="text-slate-300 text-xs">·</span>
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{todaysLocations.length}
-            </span>
-            <span className="text-slate-300 text-xs">·</span>
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
-              <Layers className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{activeLayers}/{layers.length}
-            </span>
+            {/* Compact counts — four data points in one line */}
+            <div className="flex items-center gap-2.5 flex-1 min-w-0 mt-1 overflow-x-auto">
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+                <StickyNoteIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{notes.length}
+              </span>
+              <span className="text-slate-300 text-xs">·</span>
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+                <BookmarkIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{bookmarks.length}
+              </span>
+              <span className="text-slate-300 text-xs">·</span>
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{todaysLocations.length}
+              </span>
+              <span className="text-slate-300 text-xs">·</span>
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+                <Layers className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{activeLayers}/{layers.length}
+              </span>
+            </div>
+
+            {/* Chevron — animates 180° when expanded */}
+            <ChevronDown
+              className={`shrink-0 w-5 h-5 text-slate-500 transition-transform duration-300 mt-1 ${expanded ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            />
           </div>
-
-          {/* Chevron — animates 180° when expanded */}
-          <ChevronDown
-            className={`shrink-0 w-5 h-5 text-slate-500 transition-transform duration-300 mt-1 ${expanded ? "rotate-180" : ""}`}
-            aria-hidden="true"
-          />
         </div>
 
         {/* ── Sheet body (more opaque for legibility) ── */}
