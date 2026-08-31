@@ -9,6 +9,14 @@ interface SearchBarProps {
   dropUp?: boolean;
 }
 
+function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
+    </svg>
+  );
+}
+
 export default function SearchBar({ onSearchResult, dropUp = false }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -48,31 +56,35 @@ export default function SearchBar({ onSearchResult, dropUp = false }: SearchBarP
 
   return (
     <div className="relative w-full max-w-md">
-      <div className="flex gap-2">
+      {/* Single unified control: input + button share one rounded shape and border,
+          so the search action reads as one component instead of two. */}
+      <div className="flex items-center h-10 rounded-lg border border-gray-300 bg-white shadow-sm overflow-hidden
+                       focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Search locations in Taiwan..."
-          className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+          className="flex-1 min-w-0 h-full pl-3.5 pr-2 text-sm outline-none bg-transparent placeholder:text-gray-400"
         />
         <button
           onClick={() => searchLocations(query)}
           disabled={isLoading}
-          className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium"
+          aria-label="Search"
+          className="h-full shrink-0 px-4 inline-flex items-center gap-1.5 bg-blue-600 text-white text-sm font-medium
+                     hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition-colors
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
         >
           {isLoading ? (
-            <span className="flex items-center gap-1">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Search
-            </span>
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
           ) : (
-            "Search"
+            <SearchIcon />
           )}
+          <span className="hidden sm:inline">Search</span>
         </button>
       </div>
 

@@ -470,24 +470,31 @@ export default function Home() {
           <SearchBar onSearchResult={setSearchResult} />
         </div>
 
-        {/* ── Auth: welcome badge + login/logout button ── */}
+        {/* ── Auth: user chip + admin + login/logout — unified h-10, rounded-lg, neutral secondary colors ── */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Welcome badge — desktop only */}
+          {/* User chip — desktop only */}
           {session?.user && (
-            <span className="hidden sm:inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
-              <span>👤</span>
-              <span>{userName ?? userEmail} 您好</span>
+            <span className="hidden sm:flex items-center gap-2 h-10 pl-1.5 pr-3 rounded-lg bg-gray-50 border border-gray-200 whitespace-nowrap">
+              <span className="w-7 h-7 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                {(userName ?? userEmail ?? "?")[0]?.toUpperCase()}
+              </span>
+              <span className="text-sm font-medium text-gray-700 truncate max-w-[160px]">{userName ?? userEmail} 您好</span>
             </span>
           )}
 
-          {/* ⚙️ Admin button — desktop only */}
+          {/* Admin button — desktop only */}
           {isAdmin && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="hidden md:inline-flex min-h-[44px] px-3 py-1.5 rounded-lg border border-purple-300 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 text-sm font-semibold transition-colors whitespace-nowrap"
+              className="hidden md:inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 text-sm font-medium transition-colors whitespace-nowrap
+                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
               title="管理成員白名單"
             >
-              ⚙️ 成員管理
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              成員管理
             </button>
           )}
 
@@ -497,18 +504,26 @@ export default function Home() {
               ? (
                 <button
                   onClick={() => signOut()}
-                  className="hidden md:inline-flex min-h-[44px] px-3 py-1.5 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 text-sm font-semibold transition-colors whitespace-nowrap"
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 text-sm font-medium transition-colors whitespace-nowrap
+                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                   title="登出 Google 帳號"
                 >
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 12H18M18 12l-5-5M18 12l-5 5" />
+                  </svg>
                   登出
                 </button>
               )
               : (
                 <button
                   onClick={() => signIn("google")}
-                  className="hidden md:inline-flex min-h-[44px] px-3 py-1.5 rounded-lg border border-blue-400 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors whitespace-nowrap shadow-sm"
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors whitespace-nowrap shadow-sm
+                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                   title="使用 Google 帳號登入"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H6M6 12l5-5M6 12l5 5" />
+                  </svg>
                   登入
                 </button>
               )
