@@ -99,11 +99,26 @@
         "email": "chenricky@gmail.com"
       },
       "comments": []
+    },
+    {
+      "id": "today-1788134442189",
+      "lat": 25.119447693978195,
+      "lng": 121.52593374252321,
+      "label": "ybetbytby",
+      "planDate": "2026-08-30",
+      "timeStart": "17:00",
+      "timeEnd": "20:00",
+      "createdAt": "2026-08-31T00:00:42.189Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      },
+      "comments": []
     }
   ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-30T23:58:04.161Z"
+  "updatedAt": "2026-08-31T00:00:42.371Z"
 }
