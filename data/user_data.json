@@ -122,11 +122,26 @@
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
       }
+    },
+    {
+      "id": "today-1788135524940",
+      "lat": 25.116377982812352,
+      "lng": 121.52758598327638,
+      "label": "dgg",
+      "planDate": "2026-08-30",
+      "timeStart": "19:18",
+      "timeEnd": "20:18",
+      "createdAt": "2026-08-31T00:18:44.940Z",
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      },
+      "comments": []
     }
   ],
   "todos": [],
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-31T00:16:32.158Z"
+  "updatedAt": "2026-08-31T00:18:45.140Z"
 }
