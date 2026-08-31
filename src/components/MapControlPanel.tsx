@@ -1,6 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import {
+  StickyNote as StickyNoteIcon,
+  Bookmark as BookmarkIcon,
+  Calendar,
+  Layers,
+  ChevronDown,
+  MessageCircle,
+  Clock,
+  Trash2,
+  Navigation,
+  type LucideIcon,
+} from "lucide-react";
 import { StickyNote, Bookmark, TodayLocation } from "@/types";
 import { LayerItem } from "@/components/MobileBottomSheet";
 
@@ -30,9 +42,11 @@ function formatTime(t: string): string {
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
+// Calibrated 6-hue set for person-avatars — deliberately excludes amber/blue/emerald,
+// which are reserved for notes/bookmarks/today category identity.
 const AVATAR_PALETTE = [
-  "bg-blue-500",  "bg-emerald-500", "bg-violet-500", "bg-rose-500",
-  "bg-amber-500", "bg-teal-500",    "bg-indigo-500", "bg-pink-500",
+  "bg-violet-500", "bg-indigo-500", "bg-teal-500",
+  "bg-rose-500",   "bg-fuchsia-500", "bg-cyan-500",
 ];
 
 function avatarColor(name: string): string {
@@ -48,26 +62,15 @@ function nameInitials(name: string): string {
     : name.slice(0, 2).toUpperCase();
 }
 
-function FlyIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2}
-      viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round"
-        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Tab = "notes" | "bookmarks" | "today" | "layers";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "notes",     label: "📝 便利貼" },
-  { key: "bookmarks", label: "📌 書籤"   },
-  { key: "today",     label: "📅 今日"   },
-  { key: "layers",    label: "🗂️ 圖層"   },
+const TABS: { key: Tab; label: string; icon: LucideIcon }[] = [
+  { key: "notes",     label: "便利貼", icon: StickyNoteIcon },
+  { key: "bookmarks", label: "書籤",   icon: BookmarkIcon   },
+  { key: "today",     label: "今日",   icon: Calendar       },
+  { key: "layers",    label: "圖層",   icon: Layers         },
 ];
 
 interface Props {
@@ -117,35 +120,40 @@ export default function MapControlPanel({
   return (
     <div className="hidden md:flex absolute top-3 left-3 z-[1000] flex-col w-72 pointer-events-none">
       <div
-        className="pointer-events-auto bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col"
+        className="pointer-events-auto bg-white/90 backdrop-blur-md rounded-xl
+                   shadow-[0_2px_8px_-2px_rgba(15,23,42,0.08),0_12px_24px_-8px_rgba(15,23,42,0.12)]
+                   border border-slate-200/80 overflow-hidden flex flex-col"
         style={{ maxHeight: "85vh" }}
       >
         {/* ── Header: counts + collapse toggle ── */}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="w-full shrink-0 flex items-center justify-between px-3 py-2.5 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors"
+          className="w-full shrink-0 flex items-center justify-between px-3 py-2.5 bg-slate-50 border-b border-slate-200/80 hover:bg-slate-100 transition-colors"
         >
           <div className="flex items-center gap-2.5 overflow-x-auto">
-            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">📝 {notes.length}</span>
-            <span className="text-gray-300 text-xs">·</span>
-            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">📌 {bookmarks.length}</span>
-            <span className="text-gray-300 text-xs">·</span>
-            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">📅 {todaysLocations.length}</span>
-            <span className="text-gray-300 text-xs">·</span>
-            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">🗂️ {activeLayers}/{layers.length}</span>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+              <StickyNoteIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{notes.length}
+            </span>
+            <span className="text-slate-300 text-xs">·</span>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+              <BookmarkIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{bookmarks.length}
+            </span>
+            <span className="text-slate-300 text-xs">·</span>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{todaysLocations.length}
+            </span>
+            <span className="text-slate-300 text-xs">·</span>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 whitespace-nowrap">
+              <Layers className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />{activeLayers}/{layers.length}
+            </span>
           </div>
-          <svg
-            className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${open ? "" : "rotate-180"}`}
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          </svg>
+          <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 shrink-0 ${open ? "" : "rotate-180"}`} aria-hidden="true" />
         </button>
 
         {open && (
           <div className="flex flex-col min-h-0">
             {/* ── Tab bar ── */}
-            <div className="shrink-0 flex border-b border-gray-100">
+            <div className="shrink-0 flex border-b border-slate-100">
               {visibleTabList.map(tab => {
                 const isActive = effectiveTab === tab.key;
                 const accentClass = isActive
@@ -153,13 +161,15 @@ export default function MapControlPanel({
                   : tab.key === "bookmarks" ? "text-blue-600 border-b-2 border-blue-500"
                   : tab.key === "today"     ? "text-emerald-600 border-b-2 border-emerald-500"
                   :                           "text-slate-700 border-b-2 border-slate-500"
-                  : "text-gray-400 hover:text-gray-600";
+                  : "text-slate-400 hover:text-slate-600";
+                const Icon = tab.icon;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 py-2.5 text-xs font-semibold transition-colors ${accentClass}`}
+                    className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[11px] font-semibold transition-colors ${accentClass}`}
                   >
+                    <Icon className="w-4 h-4" aria-hidden="true" />
                     {tab.label}
                   </button>
                 );
@@ -173,12 +183,12 @@ export default function MapControlPanel({
               {effectiveTab === "notes" && (
                 sortedNotes.length === 0 ? (
                   <div className="flex flex-col items-center justify-center text-center px-6 py-10">
-                    <span className="text-4xl mb-3 select-none opacity-40">📝</span>
-                    <p className="text-sm font-semibold text-gray-500">還沒有便利貼</p>
-                    <p className="text-xs mt-1.5 text-gray-400 leading-relaxed">點擊地圖任意位置即可新增</p>
+                    <StickyNoteIcon className="w-10 h-10 mb-3 text-slate-300" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-slate-500">還沒有便利貼</p>
+                    <p className="text-xs mt-1.5 text-slate-400 leading-relaxed">點擊地圖任意位置即可新增</p>
                   </div>
                 ) : (
-                  <ul className="divide-y divide-gray-100">
+                  <ul className="divide-y divide-slate-100">
                     {sortedNotes.map(note => {
                       const author       = note.createdBy?.name ?? "匿名";
                       const commentCount = note.comments?.length ?? 0;
@@ -202,17 +212,19 @@ export default function MapControlPanel({
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                              <span className="text-xs font-semibold text-gray-800 truncate">{author}</span>
-                              <span className="text-[10px] text-gray-400 shrink-0 tabular-nums">{timeAgo(note.createdAt)}</span>
+                              <span className="text-xs font-semibold text-slate-800 truncate">{author}</span>
+                              <span className="text-[10px] text-slate-400 shrink-0 tabular-nums">{timeAgo(note.createdAt)}</span>
                             </div>
-                            <p className="text-[11px] text-gray-600 line-clamp-2 leading-snug">
-                              {note.content || <span className="text-gray-400 italic">（空白便利貼）</span>}
+                            <p className="text-[11px] text-slate-600 line-clamp-2 leading-snug">
+                              {note.content || <span className="text-slate-400 italic">（空白便利貼）</span>}
                             </p>
                             {commentCount > 0 && (
-                              <span className="text-[10px] text-blue-500 font-medium mt-0.5 block">💬 {commentCount} 則留言</span>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full mt-1">
+                                <MessageCircle className="w-3 h-3" aria-hidden="true" />{commentCount} 則留言
+                              </span>
                             )}
                           </div>
-                          <div className="shrink-0 self-center text-gray-300"><FlyIcon /></div>
+                          <div className="shrink-0 self-center text-slate-300"><Navigation className="w-3.5 h-3.5" aria-hidden="true" /></div>
                         </li>
                       );
                     })}
@@ -224,12 +236,12 @@ export default function MapControlPanel({
               {effectiveTab === "bookmarks" && (
                 bookmarks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center text-center px-6 py-10">
-                    <span className="text-4xl mb-3 select-none opacity-40">📌</span>
-                    <p className="text-sm font-semibold text-gray-500">還沒有書籤</p>
-                    <p className="text-xs mt-1.5 text-gray-400 leading-relaxed">點擊地圖即可新增書籤</p>
+                    <BookmarkIcon className="w-10 h-10 mb-3 text-slate-300" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-slate-500">還沒有書籤</p>
+                    <p className="text-xs mt-1.5 text-slate-400 leading-relaxed">點擊地圖即可新增書籤</p>
                   </div>
                 ) : (
-                  <ul className="divide-y divide-gray-100">
+                  <ul className="divide-y divide-slate-100">
                     {bookmarks.map(bm => (
                       <li
                         key={bm.id}
@@ -239,14 +251,14 @@ export default function MapControlPanel({
                           onClick={() => onSelectBookmark(bm)}
                           className="flex items-center gap-2.5 min-w-0 flex-1 text-left"
                         >
-                          <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-sm shadow-sm">
-                            📍
+                          <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
+                            <BookmarkIcon className="w-3.5 h-3.5 text-white" aria-hidden="true" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-gray-800 truncate">{bm.label}</p>
-                            <p className="text-[10px] text-gray-400 font-mono">{bm.lat.toFixed(4)}, {bm.lng.toFixed(4)}</p>
+                            <p className="text-xs font-semibold text-slate-800 truncate">{bm.label}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">{bm.lat.toFixed(4)}, {bm.lng.toFixed(4)}</p>
                             {bm.createdBy?.name && (
-                              <p className="text-[10px] text-gray-400 mt-0.5">by {bm.createdBy.name}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">by {bm.createdBy.name}</p>
                             )}
                           </div>
                         </button>
@@ -255,9 +267,7 @@ export default function MapControlPanel({
                           className="shrink-0 p-1 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 rounded transition-all"
                           title="刪除書籤"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
                       </li>
                     ))}
@@ -269,12 +279,12 @@ export default function MapControlPanel({
               {effectiveTab === "today" && (
                 todaysLocations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center text-center px-6 py-10">
-                    <span className="text-4xl mb-3 select-none opacity-40">📅</span>
-                    <p className="text-sm font-semibold text-gray-500">今天還沒有安排地點</p>
-                    <p className="text-xs mt-1.5 text-gray-400 leading-relaxed">點擊地圖並選擇「新增今日行程」</p>
+                    <Calendar className="w-10 h-10 mb-3 text-slate-300" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-slate-500">今天還沒有安排地點</p>
+                    <p className="text-xs mt-1.5 text-slate-400 leading-relaxed">點擊地圖並選擇「新增今日行程」</p>
                   </div>
                 ) : (
-                  <ul className="divide-y divide-gray-100">
+                  <ul className="divide-y divide-slate-100">
                     {todaysLocations.map(loc => {
                       const author       = loc.createdBy?.name ?? "匿名";
                       const commentCount = loc.comments?.length ?? 0;
@@ -299,22 +309,24 @@ export default function MapControlPanel({
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                              <span className="text-xs font-semibold text-gray-800 truncate">{loc.label}</span>
-                              <span className="text-[10px] text-gray-400 shrink-0 tabular-nums">{timeAgo(loc.createdAt)}</span>
+                              <span className="text-xs font-semibold text-slate-800 truncate">{loc.label}</span>
+                              <span className="text-[10px] text-slate-400 shrink-0 tabular-nums">{timeAgo(loc.createdAt)}</span>
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[11px] text-gray-500">by {author}</span>
+                              <span className="text-[11px] text-slate-500">by {author}</span>
                               {timeWindow && (
-                                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                                  🕐 {timeWindow}
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                  <Clock className="w-3 h-3" aria-hidden="true" />{timeWindow}
                                 </span>
                               )}
                             </div>
                             {commentCount > 0 && (
-                              <span className="text-[10px] text-blue-500 font-medium mt-0.5 block">💬 {commentCount} 則留言</span>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full mt-1">
+                                <MessageCircle className="w-3 h-3" aria-hidden="true" />{commentCount} 則留言
+                              </span>
                             )}
                           </div>
-                          <div className="shrink-0 self-center text-gray-300"><FlyIcon /></div>
+                          <div className="shrink-0 self-center text-slate-300"><Navigation className="w-3.5 h-3.5" aria-hidden="true" /></div>
                         </li>
                       );
                     })}
@@ -337,7 +349,7 @@ export default function MapControlPanel({
                           transition-all duration-150
                           ${layer.active
                             ? `${layer.activeColor} ${layer.activeBorder} ${layer.activeText} shadow-sm`
-                            : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:border-gray-300"
+                            : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300"
                           }
                         `}
                       >
@@ -349,7 +361,7 @@ export default function MapControlPanel({
                       </button>
                     ))}
                   </div>
-                  <p className="text-[11px] text-gray-400 text-center mt-3 select-none">
+                  <p className="text-[11px] text-slate-400 text-center mt-3 select-none">
                     {activeLayers} / {layers.length} 個圖層已開啟
                   </p>
                 </div>

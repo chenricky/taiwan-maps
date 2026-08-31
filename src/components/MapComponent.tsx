@@ -14,6 +14,15 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
+  Settings,
+  LocateFixed,
+  StickyNote as StickyNoteIcon,
+  Bookmark as BookmarkIcon,
+  Calendar,
+  Layers,
+  type LucideIcon,
+} from "lucide-react";
+import {
   Bookmark,
   StickyNote,
   TodayLocation,
@@ -44,9 +53,19 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
+// ── Hand-copied Lucide-style SVG glyphs for Leaflet divIcon markup ──────────────
+// L.divIcon's `html` is raw HTML, not JSX — react components can't be rendered
+// into it, so these are inline SVG strings matching the same icons used in the
+// React-rendered panels (Bookmark, Calendar) for visual consistency. Every <svg>
+// declares viewBox/width/height/fill/stroke explicitly since no Tailwind/React
+// styling reaches this markup.
+const BOOKMARK_GLYPH = `<svg viewBox="0 0 24 24" width="16" height="16" fill="white" stroke="none"><path d="M6 3a2 2 0 00-2 2v16l8-5.333L20 21V5a2 2 0 00-2-2H6z"/></svg>`;
+const CALENDAR_GLYPH = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+const PENCIL_GLYPH = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>`;
+
 const customIcon = new L.DivIcon({
   className: "custom-marker",
-  html: `<div style="background:#2563eb;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:16px;font-weight:bold;">📍</div>`,
+  html: `<div style="background:linear-gradient(135deg,#3b82f6,#2563eb);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(15,23,42,0.3);">${BOOKMARK_GLYPH}</div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
@@ -62,22 +81,34 @@ function todayDateStr(): string {
 // numerous/transient than curated notes — clicking opens the discussion modal directly.
 const todayIcon = new L.DivIcon({
   className: "today-location-marker",
-  html: `<div style="background:#059669;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:15px;cursor:pointer;">📅</div>`,
+  html: `<div style="background:linear-gradient(135deg,#10b981,#059669);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(15,23,42,0.3);cursor:pointer;">${CALENDAR_GLYPH}</div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
 });
 
+// "You are here" — a pulsing halo + solid dot, distinct from POI pins and replacing
+// Leaflet's default CDN teardrop marker (which clashed with the custom pin language).
+const userLocationIcon = new L.DivIcon({
+  className: "user-location-marker",
+  html: `<div style="position:relative;width:20px;height:20px;">
+    <div style="position:absolute;inset:-10px;border-radius:50%;background:rgba(37,99,235,0.2);animation:userLocationPulse 2s ease-out infinite;"></div>
+    <div style="position:absolute;inset:0;border-radius:50%;background:#2563eb;border:3px solid white;box-shadow:0 1px 4px rgba(15,23,42,0.35);"></div>
+  </div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
 const routeIcons = {
   start: L.divIcon({
     className: "route-marker-start",
-    html: `<div style="background:#16a34a;color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.3);">Start</div>`,
+    html: `<div style="background:#16a34a;color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 4px rgba(15,23,42,0.3);">Start</div>`,
     iconSize: [60, 24],
     iconAnchor: [30, 12],
   }),
   end: L.divIcon({
     className: "route-marker-end",
-    html: `<div style="background:#dc2626;color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.3);">End</div>`,
+    html: `<div style="background:#dc2626;color:white;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 4px rgba(15,23,42,0.3);">End</div>`,
     iconSize: [60, 24],
     iconAnchor: [30, 12],
   }),
@@ -120,11 +151,11 @@ interface MapComponentProps {
 
 type PanelTab = "notes" | "bookmarks" | "today" | "layers";
 
-const SETTINGS_TABS: { key: PanelTab; label: string }[] = [
-  { key: "notes",     label: "📝 便利貼" },
-  { key: "bookmarks", label: "📌 書籤"   },
-  { key: "today",     label: "📅 今日"   },
-  { key: "layers",    label: "🗂️ 圖層"   },
+const SETTINGS_TABS: { key: PanelTab; label: string; icon: LucideIcon }[] = [
+  { key: "notes",     label: "便利貼", icon: StickyNoteIcon },
+  { key: "bookmarks", label: "書籤",   icon: BookmarkIcon   },
+  { key: "today",     label: "今日",   icon: Calendar       },
+  { key: "layers",    label: "圖層",   icon: Layers         },
 ];
 
 function MapController({
@@ -301,7 +332,7 @@ export default function MapComponent({
 
         {/* User location */}
         {userLocation && (
-          <Marker position={userLocation}>
+          <Marker position={userLocation} icon={userLocationIcon}>
             <Popup>You are here</Popup>
           </Marker>
         )}
@@ -326,7 +357,10 @@ export default function MapComponent({
               position={[note.lat, note.lng]}
               icon={L.divIcon({
                 className: "sticky-note-marker",
-                html: `<div title="點擊編輯便利貼" style="cursor:pointer;background:${note.color};width:180px;padding:10px 8px 6px;border-radius:2px;box-shadow:2px 3px 8px rgba(0,0,0,0.2);font-family:'Comic Sans MS','Segoe Print',cursive;font-size:13px;line-height:1.4;transform:rotate(-2deg);word-wrap:break-word;min-height:40px;position:relative;">${note.content}<span style="position:absolute;bottom:3px;right:5px;font-size:10px;opacity:0.5;">✏️</span></div>`,
+                // A translucent white wash over the note's own color softens/desaturates it
+                // uniformly regardless of which of the 6 preset hues it is, rather than
+                // hand-deriving a separate desaturated hex value per color.
+                html: `<div title="點擊編輯便利貼" style="cursor:pointer;background:linear-gradient(rgba(255,255,255,0.4),rgba(255,255,255,0.4)),${note.color};color:#1e293b;width:180px;padding:10px 8px 6px;border-radius:6px;box-shadow:0 2px 6px -1px rgba(15,23,42,0.15),0 4px 10px -2px rgba(15,23,42,0.1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;line-height:1.4;transform:rotate(-2deg);word-wrap:break-word;min-height:40px;position:relative;">${note.content}<span style="position:absolute;bottom:4px;right:5px;opacity:0.45;">${PENCIL_GLYPH}</span></div>`,
                 iconSize: [180, 50],
                 iconAnchor: [90, 25],
               })}
@@ -390,46 +424,45 @@ export default function MapComponent({
         <div className="relative">
           <button
             onClick={() => setSettingsOpen((v) => !v)}
-            className="bg-white p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+            className="bg-white/90 backdrop-blur-md p-2.5 rounded-full border border-slate-200/60
+                       shadow-[0_2px_6px_rgba(15,23,42,0.12),0_1px_2px_rgba(15,23,42,0.08)]
+                       hover:bg-white transition-colors"
             title="顯示設定"
             aria-label="顯示設定"
             aria-expanded={settingsOpen}
           >
-            <svg
-              className="h-5 w-5 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+            <Settings className="h-5 w-5 text-slate-600" aria-hidden="true" />
           </button>
 
           {settingsOpen && (
             <>
               {/* Tap-away dismiss layer */}
               <div className="fixed inset-0 z-0" onClick={() => setSettingsOpen(false)} />
-              <div className="absolute bottom-full right-0 mb-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-10">
-                <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 border-b border-gray-100 whitespace-nowrap">
+              <div className="absolute bottom-full right-0 mb-2 w-44 bg-white/95 backdrop-blur-md rounded-xl
+                               border border-slate-200/80
+                               shadow-[0_2px_8px_-2px_rgba(15,23,42,0.08),0_12px_24px_-8px_rgba(15,23,42,0.12)]
+                               py-1.5 z-10">
+                <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 border-b border-slate-100 whitespace-nowrap">
                   顯示分頁
                 </div>
-                {SETTINGS_TABS.map((tab) => (
-                  <label
-                    key={tab.key}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={visibleTabs[tab.key]}
-                      onChange={() => onToggleTab?.(tab.key)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    {tab.label}
-                  </label>
-                ))}
+                {SETTINGS_TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <label
+                      key={tab.key}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer whitespace-nowrap"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visibleTabs[tab.key]}
+                        onChange={() => onToggleTab?.(tab.key)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <Icon className="w-4 h-4 text-slate-400" aria-hidden="true" />
+                      {tab.label}
+                    </label>
+                  );
+                })}
               </div>
             </>
           )}
@@ -437,21 +470,12 @@ export default function MapComponent({
 
         <button
           onClick={handleLocateMe}
-          className="bg-white p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+          className="bg-white/90 backdrop-blur-md p-2.5 rounded-full border border-slate-200/60
+                     shadow-[0_2px_6px_rgba(15,23,42,0.12),0_1px_2px_rgba(15,23,42,0.08)]
+                     hover:bg-white transition-colors"
           title="Locate Me"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 text-blue-600"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <LocateFixed className="h-5 w-5 text-blue-600" aria-hidden="true" />
         </button>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { Map as MapIcon, Settings, LogOut, LogIn, Bookmark as BookmarkIcon, StickyNote as StickyNoteIcon, CheckSquare } from "lucide-react";
 import { Bookmark, StickyNote, TodayLocation, TodoItem, RoutePoint, TravelMode, SearchResult } from "@/types";
 import SearchBar from "@/components/SearchBar";
 import RoutingPanel from "@/components/RoutingPanel";
@@ -101,6 +102,20 @@ const LAYER_TOGGLES: LayerToggle[] = [
     activeText: "text-white",
   },
 ];
+
+// Subtle-tint pill classes for the footer's active-layer flags, keyed by LAYER_TOGGLES.key.
+// Written as full literal class strings (not template-interpolated) so Tailwind's static
+// scanner can actually find and generate them at build time.
+const LAYER_PILL_CLASS: Record<string, string> = {
+  tourist:    "bg-amber-50 text-amber-700",
+  facilities: "bg-blue-50 text-blue-700",
+  route:      "bg-indigo-50 text-indigo-700",
+  toilet:     "bg-green-50 text-green-700",
+  trail:      "bg-emerald-50 text-emerald-700",
+  bus:        "bg-orange-50 text-orange-700",
+  notes:      "bg-yellow-50 text-yellow-700",
+  heatmap:    "bg-rose-50 text-rose-700",
+};
 
 export default function Home() {
   // ── Auth session ───────────────────────────────────────────────────────────
@@ -461,9 +476,11 @@ export default function Home() {
     <div className="fixed top-0 left-0 right-0 flex flex-col overflow-hidden bg-gray-50 md:relative md:inset-auto" style={{ height: "calc(var(--vh, 1vh) * 100)" }}>
 
       {/* ── Header: logo + search + auth ────────────────────────────────────── */}
-      <header className="hidden md:flex md:items-center md:gap-3 md:relative md:z-50 md:shrink-0 md:bg-white md:border-b md:border-gray-200 md:px-3 md:py-2">
-        <h1 className="text-base font-bold text-blue-700 flex items-center gap-1.5 shrink-0">
-          <span>🗺️</span>
+      <header className="hidden md:flex md:items-center md:gap-3 md:relative md:z-50 md:shrink-0 md:bg-white md:border-b md:border-slate-200 md:px-3 md:py-2">
+        <h1 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2 shrink-0">
+          <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+            <MapIcon className="w-4 h-4" aria-hidden="true" />
+          </span>
           <span className="hidden sm:inline">Taiwan Maps</span>
         </h1>
         <div className="flex-1 min-w-0">
@@ -474,11 +491,11 @@ export default function Home() {
         <div className="flex items-center gap-2 shrink-0">
           {/* User chip — desktop only */}
           {session?.user && (
-            <span className="hidden sm:flex items-center gap-2 h-10 pl-1.5 pr-3 rounded-lg bg-gray-50 border border-gray-200 whitespace-nowrap">
+            <span className="hidden sm:flex items-center gap-2 h-10 pl-1.5 pr-3 rounded-lg bg-slate-50 border border-slate-200 whitespace-nowrap">
               <span className="w-7 h-7 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
                 {(userName ?? userEmail ?? "?")[0]?.toUpperCase()}
               </span>
-              <span className="text-sm font-medium text-gray-700 truncate max-w-[160px]">{userName ?? userEmail} 您好</span>
+              <span className="text-sm font-medium text-slate-700 truncate max-w-[160px]">{userName ?? userEmail} 您好</span>
             </span>
           )}
 
@@ -486,14 +503,11 @@ export default function Home() {
           {isAdmin && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="hidden md:inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 text-sm font-medium transition-colors whitespace-nowrap
+              className="hidden md:inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 text-sm font-medium transition-colors whitespace-nowrap
                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
               title="管理成員白名單"
             >
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <Settings className="w-4 h-4 text-slate-500" aria-hidden="true" />
               成員管理
             </button>
           )}
@@ -504,13 +518,11 @@ export default function Home() {
               ? (
                 <button
                   onClick={() => signOut()}
-                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 text-sm font-medium transition-colors whitespace-nowrap
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 text-sm font-medium transition-colors whitespace-nowrap
                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                   title="登出 Google 帳號"
                 >
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 12H18M18 12l-5-5M18 12l-5 5" />
-                  </svg>
+                  <LogOut className="w-4 h-4 text-slate-500" aria-hidden="true" />
                   登出
                 </button>
               )
@@ -521,9 +533,7 @@ export default function Home() {
                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                   title="使用 Google 帳號登入"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H6M6 12l5-5M6 12l5 5" />
-                  </svg>
+                  <LogIn className="w-4 h-4" aria-hidden="true" />
                   登入
                 </button>
               )
@@ -752,19 +762,31 @@ export default function Home() {
       />
 
       {/* ── Status bar ──────────────────────────────────────────────────────── */}
-      <footer className="hidden md:flex bg-gray-100 border-t border-gray-200 px-4 py-1 text-xs text-gray-500 items-center justify-between shrink-0">
-        <span className="truncate">
-          📌 {appData.bookmarks.length} &nbsp;|&nbsp;
-          📝 {appData.stickyNotes.length} &nbsp;|&nbsp;
-          ✅ {appData.todos.length}
-          {showTouristLayer && " | ✨ 景點 ON"}
-          {showFacilitiesLayer && " | ♿ 設施 ON"}
-          {showRouteLayer && " | 🚇 路網 ON"}
-          {showToiletLayer && " | 🚻 廁所 ON"}
-          {showTrailLayer && " | 🥾 步道 ON"}
-          {showBusLayer && " | 🚌 公車 ON"}
-          {showHeatmapLayer && " | 🗺️ 熱圖 ON"}
-        </span>
+      <footer className="hidden md:flex bg-slate-50 border-t border-slate-200 px-4 py-1.5 text-xs text-slate-500 items-center justify-between shrink-0 gap-3 overflow-hidden">
+        <div className="flex items-center gap-3 min-w-0 overflow-x-auto">
+          <span className="inline-flex items-center gap-1 shrink-0">
+            <BookmarkIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+            {appData.bookmarks.length}
+          </span>
+          <span className="w-px h-3 bg-slate-200 shrink-0" />
+          <span className="inline-flex items-center gap-1 shrink-0">
+            <StickyNoteIcon className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+            {appData.stickyNotes.length}
+          </span>
+          <span className="w-px h-3 bg-slate-200 shrink-0" />
+          <span className="inline-flex items-center gap-1 shrink-0">
+            <CheckSquare className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+            {appData.todos.length}
+          </span>
+          {LAYER_TOGGLES.filter((l) => layerActive[l.key]).map((l) => (
+            <span
+              key={l.key}
+              className={`inline-flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${LAYER_PILL_CLASS[l.key] ?? "bg-slate-100 text-slate-700"}`}
+            >
+              {l.icon} {l.label}
+            </span>
+          ))}
+        </div>
         <span className="shrink-0 ml-2">OpenStreetMap &copy;</span>
       </footer>
     </div>
