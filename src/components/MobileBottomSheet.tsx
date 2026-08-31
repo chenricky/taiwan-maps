@@ -88,7 +88,10 @@ const TABS: { key: Tab; label: string; icon: LucideIcon }[] = [
 // Fallback peek height (search strip + handle) for the very first paint, before the
 // ResizeObserver below has measured the real thing — refined immediately on mount.
 const PEEK_PX_FALLBACK = 116;
-const SHEET_VH = "72vh";
+// dvh (not vh) — mobile browsers resolve `vh` against the viewport with the address
+// bar collapsed, which disagrees with window.innerHeight by ~10-15px and threw off
+// the translateY math below just enough to crop into the tab bar underneath.
+const SHEET_VH = "72dvh";
 
 interface Props {
   notes:            StickyNote[];
