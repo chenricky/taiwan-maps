@@ -132,11 +132,11 @@
       "timeStart": "19:18",
       "timeEnd": "20:18",
       "createdAt": "2026-08-31T00:18:44.940Z",
+      "comments": [],
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
-      },
-      "comments": []
+      }
     },
     {
       "id": "today-1788135537037",
@@ -147,6 +147,21 @@
       "timeStart": "21:18",
       "timeEnd": "22:18",
       "createdAt": "2026-08-31T00:18:57.037Z",
+      "comments": [],
+      "createdBy": {
+        "name": "Ricky Chen",
+        "email": "chenricky@gmail.com"
+      }
+    },
+    {
+      "id": "today-1788320971891",
+      "lat": 25.055137204562158,
+      "lng": 121.53041839599611,
+      "label": "rg",
+      "planDate": "2026-09-01",
+      "timeStart": "20:49",
+      "timeEnd": "20:51",
+      "createdAt": "2026-09-02T03:49:31.891Z",
       "createdBy": {
         "name": "Ricky Chen",
         "email": "chenricky@gmail.com"
@@ -158,5 +173,5 @@
   "invitedUsers": [
     "chenricky@gmail.com"
   ],
-  "updatedAt": "2026-08-31T00:18:57.239Z"
+  "updatedAt": "2026-09-02T03:49:32.037Z"
 }
